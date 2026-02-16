@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import { Page, BookMetadata, SummaryResult } from './types';
 import { APP_NAME, NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/gemini';
+import { summaryApi } from './services/api';
 import HistoryList from './components/HistoryList';
 import { 
   FileUp, 
@@ -38,20 +39,47 @@ const App: React.FC = () => {
   const [loadingMsg, setLoadingMsg] = useState('Processing...');
 
   useEffect(() => {
-    const saved = localStorage.getItem('summ_ai_history');
-    if (saved) setHistory(JSON.parse(saved));
+    loadHistory();
   }, []);
 
-  const saveToHistory = (item: SummaryResult) => {
-    const newHistory = [item, ...history];
-    setHistory(newHistory);
-    localStorage.setItem('summ_ai_history', JSON.stringify(newHistory));
+  const loadHistory = async () => {
+    try {
+      const summaries = await summaryApi.getAll();
+      setHistory(summaries);
+    } catch (error) {
+      console.error('Failed to load history:', error);
+      // Fallback to localStorage if API fails
+      const saved = localStorage.getItem('summ_ai_history');
+      if (saved) setHistory(JSON.parse(saved));
+    }
   };
 
-  const deleteFromHistory = (id: string) => {
-    const newHistory = history.filter(h => h.id !== id);
-    setHistory(newHistory);
-    localStorage.setItem('summ_ai_history', JSON.stringify(newHistory));
+  const saveToHistory = async (item: SummaryResult) => {
+    try {
+      await summaryApi.create(item);
+      const newHistory = [item, ...history];
+      setHistory(newHistory);
+    } catch (error) {
+      console.error('Failed to save to database:', error);
+      // Fallback to localStorage if API fails
+      const newHistory = [item, ...history];
+      setHistory(newHistory);
+      localStorage.setItem('summ_ai_history', JSON.stringify(newHistory));
+    }
+  };
+
+  const deleteFromHistory = async (id: string) => {
+    try {
+      await summaryApi.delete(id);
+      const newHistory = history.filter(h => h.id !== id);
+      setHistory(newHistory);
+    } catch (error) {
+      console.error('Failed to delete from database:', error);
+      // Fallback to localStorage if API fails
+      const newHistory = history.filter(h => h.id !== id);
+      setHistory(newHistory);
+      localStorage.setItem('summ_ai_history', JSON.stringify(newHistory));
+    }
   };
 
   const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => {

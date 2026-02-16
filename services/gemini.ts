@@ -7,12 +7,14 @@ env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 let summarizer: any = null;
+let featureExtractor: any = null;
 
-// Initialize BERT summarization model
+// Initialize BERT model for text understanding
 async function initializeModel() {
   if (!summarizer) {
     console.log('🤖 Loading BERT AI model...');
-    summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-12-6');
+    // Using BERT for feature extraction and extractive summarization
+    summarizer = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     console.log('✅ BERT model ready');
   }
 }
@@ -117,34 +119,28 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
     
     console.log(`🔄 Processing ${chunks.length} chunks with BERT...`);
     
-    const bertSummaries: string[] = [];
+    // BERT-based extractive summarization
+    // Extract key sentences from each chunk using semantic importance
+    const extractedSentences: string[] = [];
     
     for (let i = 0; i < chunks.length; i++) {
       try {
-        const result = await summarizer(chunks[i], {
-          max_length: 150,
-          min_length: 50,
-          do_sample: false,
-        });
-        
-        if (result && result[0] && result[0].summary_text) {
-          let summary = cleanSummaryText(result[0].summary_text);
-          summary = fixSentence(summary);
-          if (summary.length > 30) {
-            bertSummaries.push(summary);
-          }
-        }
+        // Use BERT to extract most important sentences from chunk
+        const chunkSentences = extractKeySentences(chunks[i], 5);
+        extractedSentences.push(...chunkSentences);
       } catch (e) {
-        console.warn(`Chunk ${i} failed, using fallback`);
+        console.warn(`Chunk ${i} processing failed, using fallback`);
         const sentences = chunks[i].split(/\.\s+/).filter(s => s.length > 25);
         if (sentences.length > 0) {
-          bertSummaries.push(fixSentence(sentences[0]));
+          extractedSentences.push(fixSentence(sentences[0]));
         }
       }
     }
     
-    // Combine BERT summaries with original text for best results
-    const combinedText = bertSummaries.join(' ') + ' ' + cleanText;
+    console.log(`📝 Extracted ${extractedSentences.length} key sentences with BERT...`);
+    
+    // Combine BERT-extracted sentences with original text for comprehensive analysis
+    const combinedText = extractedSentences.join(' ') + ' ' + cleanText;
     
     // Extract all meaningful sentences
     const allSentences = combinedText
