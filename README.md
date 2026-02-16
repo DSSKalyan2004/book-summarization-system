@@ -55,7 +55,6 @@ cd ..
 
 Create or update `.env` file in the root directory:
 ```env
-GEMINI_API_KEY=your_api_key_here
 VITE_API_URL=http://localhost:5000/api
 ```
 
@@ -125,7 +124,7 @@ intelligent-book-summarization-platform/
 │   ├── Sidebar.tsx
 │   └── HistoryList.tsx
 ├── services/            # Service layer
-│   ├── gemini.ts       # AI summarization logic
+│   ├── summarizer.ts   # AI summarization logic
 │   └── api.ts          # API client for backend
 ├── server/             # Backend server
 │   ├── models/         # MongoDB models

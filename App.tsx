@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import { Page, BookMetadata, SummaryResult } from './types';
 import { APP_NAME, NAV_ITEMS } from './constants';
-import { generateBookSummary } from './services/gemini';
+import { generateBookSummary } from './services/summarizer';
 import { summaryApi } from './services/api';
 import HistoryList from './components/HistoryList';
 import { 
