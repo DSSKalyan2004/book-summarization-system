@@ -271,29 +271,29 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-10">
+            <div className="space-y-12">
               <div className="space-y-6">
-                <h3 className="text-orange-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-2 border-orange-500 pl-4">
+                <h3 className="text-orange-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-4 border-orange-500 pl-4 py-1">
                   <BookText size={18} /> Summary
                 </h3>
-                <div className="space-y-6">
+                <div className="space-y-5 bg-gradient-to-b from-zinc-900/30 to-zinc-900/50 p-8 rounded-2xl border border-zinc-800/50">
                   {activeSummary.summaryParagraphs.map((para, i) => (
-                    <p key={i} className="text-zinc-200 leading-[1.8] text-base font-normal bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
+                    <p key={i} className="text-zinc-100 leading-[2] text-lg font-normal text-justify first-letter:text-2xl first-letter:font-bold first-letter:text-orange-400 indent-8">
                       {para}
                     </p>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-6 pt-8 border-t border-zinc-800">
-                <h3 className="text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-2 border-emerald-500 pl-4">
+              <div className="space-y-6 pt-4">
+                <h3 className="text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-4 border-emerald-500 pl-4 py-1">
                   <CheckCircle size={18} /> Key Points
                 </h3>
                 <div className="grid grid-cols-1 gap-4">
                   {activeSummary.bulletPoints.map((point, idx) => (
-                    <div key={idx} className="flex gap-4 p-5 bg-zinc-900/50 rounded-xl border border-zinc-800 items-start group hover:border-orange-500/30 transition-all">
-                      <span className="text-orange-400 font-bold text-sm mt-0.5 bg-orange-500/10 px-2.5 py-1 rounded-md">{idx + 1}</span>
-                      <p className="text-zinc-300 text-base leading-relaxed flex-1">{point}</p>
+                    <div key={idx} className="flex gap-4 p-6 bg-zinc-900/40 rounded-xl border border-zinc-800/60 items-start group hover:border-orange-500/30 hover:bg-zinc-900/60 transition-all">
+                      <span className="text-orange-400 font-bold text-sm mt-1 bg-orange-500/10 px-3 py-1.5 rounded-lg min-w-[2rem] text-center">{idx + 1}</span>
+                      <p className="text-zinc-200 text-[17px] leading-[1.8] flex-1 text-justify">{point}</p>
                     </div>
                   ))}
                 </div>

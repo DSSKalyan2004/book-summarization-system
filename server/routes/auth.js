@@ -31,6 +31,26 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
+// Middleware for optional authentication (continues even without token)
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const user = await User.findById(decoded.userId).select('-password');
+      if (user && user.isActive) {
+        req.user = user;
+      }
+    }
+    next();
+  } catch (error) {
+    // Continue without authentication if token is invalid
+    next();
+  }
+};
+
 // Middleware to check if user is admin
 const requireAdmin = (req, res, next) => {
   if (req.user.role !== 'admin') {
@@ -301,5 +321,6 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
 module.exports = {
   router,
   authenticateToken,
+  optionalAuth,
   requireAdmin
 };
