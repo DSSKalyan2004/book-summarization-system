@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { router: authRoutes } = require('./routes/auth');
+const booksRoutes = require('./routes/books');
 const summaryRoutes = require('./routes/summaries');
 
 dotenv.config();
@@ -25,11 +27,31 @@ mongoose.connect(MONGODB_URI, {
 .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/books', booksRoutes);
 app.use('/api/summaries', summaryRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Book Summarization Platform API',
+    version: '2.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      books: '/api/books',
+      summaries: '/api/summaries',
+      health: '/api/health'
+    }
+  });
 });
 
 // Error handling middleware
