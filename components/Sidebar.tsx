@@ -11,41 +11,41 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 glass border-r border-white/5 hidden md:flex flex-col z-50">
-      <div className="p-10">
-        <h1 className="text-2xl font-black text-white tracking-tighter flex items-center gap-3">
-          <div className="bg-indigo-600 p-1.5 rounded-xl shadow-lg shadow-indigo-950/40">
-            <Zap size={20} className="fill-white text-white" />
+    <aside className="fixed left-0 top-0 h-screen w-64 glass border-r border-zinc-800 hidden md:flex flex-col z-50">
+      <div className="p-8">
+        <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+          <div className="btn-primary p-1.5 rounded-lg">
+            <Zap size={18} className="fill-white text-white" strokeWidth={2.5} />
           </div>
-          {APP_NAME}
+          <span className="gradient-text">{APP_NAME}</span>
         </h1>
-        <p className="text-slate-500 text-[0.6rem] mt-3 font-black uppercase tracking-[0.4em] opacity-40">Intelligence</p>
+        <p className="text-zinc-500 text-[0.65rem] mt-2.5 font-semibold uppercase tracking-widest">Intelligence</p>
       </div>
 
-      <nav className="flex-1 px-6 space-y-1">
+      <nav className="flex-1 px-4 space-y-1.5">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             onClick={() => onPageChange(item.id as Page)}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative ${
               currentPage === item.id 
-                ? 'bg-white/5 text-white shadow-sm ring-1 ring-white/10' 
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                ? 'btn-primary text-white' 
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
             }`}
           >
-            <span className={currentPage === item.id ? 'text-indigo-400' : ''}>
+            <span className="relative z-10">
               {item.icon}
             </span>
-            <span className="font-bold text-[0.7rem] uppercase tracking-widest">{item.label}</span>
+            <span className="relative z-10 font-semibold text-sm">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="p-8">
-        <div className="bg-slate-900/40 rounded-3xl p-4 border border-white/5">
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-            <p className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest">System Ready</p>
+      <div className="p-6">
+        <div className="bg-zinc-900/60 rounded-xl p-4 border border-zinc-800">
+          <div className="flex items-center gap-2.5">
+            <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+            <p className="text-[0.65rem] text-zinc-400 font-semibold uppercase tracking-wider">System Ready</p>
           </div>
         </div>
       </div>

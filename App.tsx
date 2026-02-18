@@ -22,9 +22,6 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-declare const mammoth: any;
-declare const pdfjsLib: any;
-
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.UPLOAD);
   const [history, setHistory] = useState<SummaryResult[]>([]);
@@ -82,45 +79,29 @@ const App: React.FC = () => {
     }
   };
 
-  const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => {
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(" ");
-      fullText += pageText + "\n";
-    }
-    return fullText;
-  };
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     setFileInputName(file.name);
     setError(null);
     setIsLoading(true);
+    setLoadingMsg('Uploading and extracting text from file...');
+
     try {
-      const extension = file.name.split('.').pop()?.toLowerCase();
-      if (extension === 'pdf') {
-        const arrayBuffer = await file.arrayBuffer();
-        setTextContent(await extractTextFromPDF(arrayBuffer));
-        setInputMode('text');
-      } else if (extension === 'docx') {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        setTextContent(result.value);
-        setInputMode('text');
-      } else if (extension === 'txt') {
-        setTextContent(await file.text());
-        setInputMode('text');
-      } else {
-        throw new Error("Format not supported. Use .pdf, .docx, or .txt");
-      }
+      // Upload file to server for extraction
+      const result = await summaryApi.uploadFile(file);
+      
+      // Store the extracted text (without switching to text mode)
+      setTextContent(result.text);
+      
+      console.log(`✅ Successfully extracted ${result.text.length} characters from ${result.filename}`);
     } catch (err: any) {
-      setError(err.message || "Failed to parse file.");
+      setError(err.message || "Failed to process file. Please try again.");
+      console.error('File upload error:', err);
     } finally {
       setIsLoading(false);
+      setLoadingMsg('Processing...');
     }
   };
 
@@ -269,50 +250,50 @@ const App: React.FC = () => {
     if (activeSummary) {
       const fullSummaryText = activeSummary.summaryParagraphs.join('\n\n');
       return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 pb-20">
+        <div className="max-w-5xl mx-auto space-y-8 pb-20">
           <button 
             onClick={() => setActiveSummary(null)}
-            className="flex items-center gap-2 text-slate-400 hover:text-indigo-400 transition-colors group text-sm font-semibold"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group text-sm font-semibold bg-zinc-900/50 hover:bg-zinc-800/50 px-5 py-3 rounded-lg border border-zinc-800"
           >
             <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-            New Summary
+            <span>New Summary</span>
           </button>
 
-          <div className="card-premium p-8 md:p-14 rounded-[2.5rem] space-y-12">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-white/5 pb-10">
+          <div className="card-premium p-10 md:p-14 rounded-2xl space-y-12">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-zinc-800 pb-10">
               <div className="flex-1">
-                <h2 className="text-4xl font-extrabold text-white leading-tight tracking-tight">{activeSummary.metadata.title}</h2>
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-4">Synthesized Report • {new Date(activeSummary.timestamp).toLocaleDateString()}</p>
+                <h2 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-3">{activeSummary.metadata.title}</h2>
+                <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider">AI Summary • {new Date(activeSummary.timestamp).toLocaleDateString()}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => copyToClipboard(fullSummaryText)} className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-white transition-all" title="Copy Summary"><Copy size={22} /></button>
-                <button onClick={() => downloadSummary(activeSummary)} className="p-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white transition-all shadow-lg shadow-indigo-950/20" title="Download Text File"><Download size={22} /></button>
+                <button onClick={() => copyToClipboard(fullSummaryText)} className="p-3 bg-zinc-800/70 hover:bg-zinc-700/70 rounded-lg text-zinc-300 hover:text-white transition-all" title="Copy"><Copy size={20} /></button>
+                <button onClick={() => downloadSummary(activeSummary)} className="p-3 btn-primary text-white rounded-lg" title="Download"><Download size={20} /></button>
               </div>
             </div>
 
-            <div className="space-y-12">
+            <div className="space-y-10">
               <div className="space-y-6">
-                <h3 className="text-indigo-400 text-[0.65rem] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                  <BookText size={14} /> Comprehensive Synthesis
+                <h3 className="text-orange-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-2 border-orange-500 pl-4">
+                  <BookText size={18} /> Summary
                 </h3>
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {activeSummary.summaryParagraphs.map((para, i) => (
-                    <p key={i} className="text-slate-100 leading-[2] text-[1.0625rem] font-light tracking-wide text-justify indent-8 first-letter:text-2xl first-letter:font-semibold first-letter:text-indigo-300">
+                    <p key={i} className="text-zinc-200 leading-[1.8] text-base font-normal bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
                       {para}
                     </p>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-6 pt-8 border-t border-white/5">
-                <h3 className="text-emerald-400 text-[0.65rem] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                  <CheckCircle size={14} /> Key Points
+              <div className="space-y-6 pt-8 border-t border-zinc-800">
+                <h3 className="text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-2 border-emerald-500 pl-4">
+                  <CheckCircle size={18} /> Key Points
                 </h3>
                 <div className="grid grid-cols-1 gap-4">
                   {activeSummary.bulletPoints.map((point, idx) => (
-                    <div key={idx} className="flex gap-4 p-5 bg-slate-900/40 rounded-2xl border border-white/5 items-start group hover:border-indigo-500/20 transition-all">
-                      <span className="text-indigo-500/50 group-hover:text-indigo-400 font-bold text-sm leading-none transition-colors mt-0.5">{String(idx + 1).padStart(2, '0')}</span>
-                      <p className="text-slate-300 text-[15px] leading-relaxed flex-1">{point}</p>
+                    <div key={idx} className="flex gap-4 p-5 bg-zinc-900/50 rounded-xl border border-zinc-800 items-start group hover:border-orange-500/30 transition-all">
+                      <span className="text-orange-400 font-bold text-sm mt-0.5 bg-orange-500/10 px-2.5 py-1 rounded-md">{idx + 1}</span>
+                      <p className="text-zinc-300 text-base leading-relaxed flex-1">{point}</p>
                     </div>
                   ))}
                 </div>
@@ -324,59 +305,66 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="max-w-3xl mx-auto space-y-12 animate-in fade-in zoom-in duration-500">
-        <header className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[0.65rem] font-black uppercase tracking-widest mb-2">
-            <Sparkles size={12} /> AI Powered
+      <div className="max-w-4xl mx-auto space-y-10">
+        <header className="text-center space-y-6 py-12">
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider mb-6">
+            <Sparkles size={16} strokeWidth={2.5} /> AI Powered
           </div>
-          <h2 className="text-5xl font-extrabold text-white tracking-tight">Summarize Any Document.</h2>
-          <p className="text-slate-400 text-lg">High-fidelity synthesis in exactly two paragraphs.</p>
+          <h2 className="text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">Summarize Any Document</h2>
+          <p className="text-zinc-400 text-lg font-medium max-w-2xl mx-auto leading-relaxed">Upload your files and get instant AI-powered summaries with key insights</p>
         </header>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 text-red-400 text-sm">
-            <AlertCircle size={18} /> {error}
+          <div className="bg-red-500/10 border border-red-500/30 p-5 rounded-xl flex items-center gap-3 text-red-400 text-sm font-medium">
+            <AlertCircle size={20} className="flex-shrink-0" /> <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="card-premium p-8 md:p-10 rounded-[2.5rem] space-y-8">
-            <div className="space-y-2">
-              <label className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-widest ml-1">Document Title</label>
-              <input type="text" required value={metadata.title} onChange={e => setMetadata({...metadata, title: e.target.value})} placeholder="e.g. Sapiens" className="w-full input-premium rounded-2xl p-4 text-white placeholder:text-slate-700 outline-none" />
+          <div className="card-premium p-8 md:p-10 rounded-2xl space-y-8">
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-zinc-300 ml-1 block">Document Title</label>
+              <input type="text" required value={metadata.title} onChange={e => setMetadata({...metadata, title: e.target.value})} placeholder="Enter your document title..." className="w-full input-premium rounded-xl p-4 text-white text-base placeholder:text-zinc-500 font-medium" />
             </div>
 
-            <div className="space-y-6 border-t border-white/5 pt-8">
-              <div className="flex bg-slate-950/50 p-1.5 rounded-2xl border border-white/5 max-w-sm mx-auto">
+            <div className="space-y-6 border-t border-zinc-800 pt-8">
+              <div className="flex gap-1 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800 max-w-md mx-auto">
                 {[
-                  { id: 'text', icon: <FileText size={16} />, label: 'Text' },
-                  { id: 'file', icon: <FileUp size={16} />, label: 'File' },
-                  { id: 'url', icon: <LinkIcon size={16} />, label: 'URL' },
+                  { id: 'text', icon: <FileText size={18} />, label: 'Text' },
+                  { id: 'file', icon: <FileUp size={18} />, label: 'File' },
+                  { id: 'url', icon: <LinkIcon size={18} />, label: 'URL' },
                 ].map(mode => (
-                  <button key={mode.id} type="button" onClick={() => setInputMode(mode.id as any)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs transition-all ${inputMode === mode.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}>
-                    {mode.icon} {mode.label}
+                  <button key={mode.id} type="button" onClick={() => setInputMode(mode.id as any)} className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm transition-all ${inputMode === mode.id ? 'btn-primary text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'}`}>
+                    {mode.icon} <span>{mode.label}</span>
                   </button>
                 ))}
               </div>
 
-              {inputMode === 'text' && <textarea required value={textContent} onChange={e => setTextContent(e.target.value)} placeholder="Paste chapters or full text here..." className="w-full input-premium rounded-3xl p-6 text-white min-h-[300px] outline-none resize-none placeholder:text-slate-800 text-lg leading-relaxed" />}
-              {inputMode === 'url' && <input type="url" required value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://..." className="w-full input-premium rounded-2xl p-5 text-white outline-none" />}
+              {inputMode === 'text' && <textarea required value={textContent} onChange={e => setTextContent(e.target.value)} placeholder="Paste your document text here..." className="w-full input-premium rounded-xl p-6 text-white text-base min-h-[320px] resize-none placeholder:text-zinc-500 leading-relaxed font-normal" />}
+              {inputMode === 'url' && <input type="url" required value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com/article" className="w-full input-premium rounded-xl p-4 text-white text-base placeholder:text-zinc-500 font-medium" />}
               {inputMode === 'file' && (
-                <div className="border-2 border-dashed border-white/5 rounded-3xl p-16 flex flex-col items-center gap-4 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group">
-                  <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform"><FileUp size={32} /></div>
-                  <div className="text-center">
-                    <p className="text-white font-bold">{fileInputName || 'Choose PDF, DOCX, or TXT'}</p>
-                    <p className="text-slate-500 text-xs mt-1">Up to 50MB per document</p>
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-zinc-700 rounded-xl p-16 flex flex-col items-center gap-5 bg-zinc-900/30 hover:border-orange-500/40 hover:bg-zinc-900/50 transition-all cursor-pointer group">
+                    <div className="p-5 bg-orange-500/10 rounded-2xl text-orange-500 group-hover:bg-orange-500/15 transition-all"><FileUp size={40} strokeWidth={2} /></div>
+                    <div className="text-center">
+                      <p className="text-white font-semibold text-base">{fileInputName || 'Click to browse or drag & drop'}</p>
+                      <p className="text-zinc-500 text-sm mt-2">PDF, DOCX, TXT • Max 50MB</p>
+                    </div>
+                    <input type="file" id="file-up" className="hidden" accept=".pdf,.docx,.txt" onChange={handleFileUpload} />
+                    <label htmlFor="file-up" className="btn-primary text-white px-8 py-3 rounded-lg text-sm font-semibold cursor-pointer">Browse Files</label>
                   </div>
-                  <input type="file" id="file-up" className="hidden" accept=".pdf,.docx,.txt" onChange={handleFileUpload} />
-                  <label htmlFor="file-up" className="bg-white text-slate-950 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest cursor-pointer hover:bg-slate-200">Browse Files</label>
+                  {fileInputName && textContent && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex items-center gap-3 text-emerald-400 text-sm font-medium">
+                      <CheckCircle size={20} /> <span>File ready to summarize</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          <button type="submit" disabled={isLoading || (inputMode === 'text' && !textContent.trim())} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 text-white py-5 rounded-[2rem] flex items-center justify-center gap-3 transition-all font-black text-lg uppercase tracking-widest shadow-xl shadow-indigo-950/20 active:scale-[0.98]">
-            {isLoading ? <><Loader2 className="animate-spin" size={20} /> {loadingMsg}</> : <><Send size={18} /> Summarize with BERT AI <ArrowRight size={18} /></>}
+          <button type="submit" disabled={isLoading || ((inputMode === 'text' || inputMode === 'file') && !textContent.trim())} className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none text-white py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base">
+            {isLoading ? <><Loader2 className="animate-spin" size={20} /> <span>{loadingMsg}</span></> : <><Send size={20} /> <span>Generate Summary</span> <ArrowRight size={20} /></>}
           </button>
         </form>
       </div>
@@ -384,23 +372,32 @@ const App: React.FC = () => {
   };
 
   const renderHistory = () => (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <header><h2 className="text-4xl font-extrabold text-white tracking-tight">Your History</h2><p className="text-slate-400 text-lg">Retrieve previously generated summaries.</p></header>
+    <div className="max-w-5xl mx-auto space-y-8">
+      <header className="p-8 rounded-xl border border-zinc-800 bg-gradient-to-b from-zinc-900/50 to-zinc-900/30">
+        <h2 className="text-4xl font-bold text-white">Your History</h2>
+        <p className="text-zinc-400 text-base mt-2">View and manage your previous summaries</p>
+      </header>
       <HistoryList items={history} onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }} onDelete={deleteFromHistory} />
     </div>
   );
 
   const renderAbout = () => (
-    <div className="max-w-3xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 py-10">
-      <div className="text-center space-y-4">
-        <h2 className="text-6xl font-black text-white tracking-tighter uppercase">{APP_NAME}</h2>
-        <p className="text-xl text-indigo-400 font-bold uppercase tracking-[0.3em]">Pure Document Intelligence</p>
+    <div className="max-w-4xl mx-auto space-y-12 py-10">
+      <div className="text-center space-y-5">
+        <h2 className="text-5xl md:text-6xl font-extrabold gradient-text tracking-tight">{APP_NAME}</h2>
+        <p className="text-lg text-orange-400 font-semibold uppercase tracking-wider">AI Document Intelligence</p>
       </div>
-      <div className="card-premium p-12 rounded-[4rem] space-y-8 leading-relaxed">
-        <p className="text-slate-300 text-2xl font-light">The most efficient way to digest large volumes of information. <span className="text-white font-medium">SummAI</span> converts thousands of pages into actionable strategic insights using advanced AI.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/5 pt-10">
-          <div><h4 className="text-white font-bold text-lg mb-2">Multi-Format</h4><p className="text-slate-500 text-sm">PDF, DOCX, and Text file extraction with lossless semantic preservation.</p></div>
-          <div><h4 className="text-white font-bold text-lg mb-2">BERT AI Model</h4><p className="text-slate-500 text-sm">Powered by state-of-the-art BERT transformers running directly in your browser for intelligent extractive summarization.</p></div>
+      <div className="card-premium p-10 md:p-12 rounded-2xl space-y-8">
+        <p className="text-zinc-300 text-xl font-normal leading-relaxed">Transform your documents into <span className="text-white font-bold gradient-text">actionable insights</span> using cutting-edge AI technology.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-zinc-800 pt-8">
+          <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
+            <h4 className="text-white font-bold text-lg mb-3 flex items-center gap-2.5"><FileText className="text-orange-400" size={22} /> Multi-Format Support</h4>
+            <p className="text-zinc-400 text-sm leading-relaxed">Process PDF, DOCX, and TXT files with intelligent text extraction and formatting.</p>
+          </div>
+          <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
+            <h4 className="text-white font-bold text-lg mb-3 flex items-center gap-2.5"><Sparkles className="text-orange-400" size={22} /> BERT AI Model</h4>
+            <p className="text-zinc-400 text-sm leading-relaxed">Powered by state-of-the-art transformers for precise extractive summarization.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -409,14 +406,20 @@ const App: React.FC = () => {
   return (
     <div className="flex text-slate-100 min-h-screen">
       <Sidebar currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); setActiveSummary(null); }} />
-      <main className="flex-1 md:ml-64 p-6 md:p-16 pb-32 md:pb-16 bg-[#030712]/50">
+      <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16">
         {currentPage === Page.UPLOAD && renderUpload()}
         {currentPage === Page.HISTORY && renderHistory()}
         {currentPage === Page.ABOUT && renderAbout()}
       </main>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-5 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-zinc-800 flex justify-around p-4 z-50">
         {NAV_ITEMS.map(item => (
-          <button key={item.id} onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} className={`p-3 rounded-2xl transition-all ${currentPage === item.id ? 'text-indigo-400 bg-white/5' : 'text-slate-500'}`}>{item.icon}</button>
+          <button 
+            key={item.id} 
+            onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 
+            className={`p-3 rounded-lg transition-all ${currentPage === item.id ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            {item.icon}
+          </button>
         ))}
       </nav>
     </div>

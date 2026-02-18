@@ -75,4 +75,27 @@ export const summaryApi = {
       throw error;
     }
   },
+
+  // Upload file and extract text
+  uploadFile: async (file: File): Promise<{ text: string; filename: string }> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/summaries/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload file');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  },
 };

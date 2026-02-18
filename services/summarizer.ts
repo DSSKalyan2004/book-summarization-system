@@ -22,12 +22,25 @@ async function initializeModel() {
 // Clean and format summary text with proper punctuation
 function cleanSummaryText(text: string): string {
   return text
+    // Remove special characters but keep basic punctuation
+    .replace(/[^\w\s.,!?;:()\-'"]/g, ' ')
+    // Remove URLs and references
+    .replace(/https?:\/\/[^\s]+/gi, '')
+    .replace(/www\.[^\s]+/gi, '')
+    .replace(/\[\d+\]/g, '')
+    // Fix spacing
     .replace(/\s+/g, ' ')
     .replace(/\s([.,!?;:])/g, '$1')
     .replace(/([.!?])\s*([A-Z])/g, '$1 $2')
     .replace(/([a-z])([A-Z])/g, '$1. $2')
-    .replace(/\.\./g, '.')
+    // Remove duplicate punctuation
+    .replace(/\.{2,}/g, '.')
     .replace(/\s\./g, '.')
+    .replace(/,{2,}/g, ',')
+    .replace(/!{2,}/g, '!')
+    .replace(/\?{2,}/g, '?')
+    // Remove punctuation combinations
+    .replace(/[.,;:!?]{3,}/g, '.')
     .trim();
 }
 
@@ -35,17 +48,25 @@ function cleanSummaryText(text: string): string {
 function fixSentence(sentence: string): string {
   let fixed = sentence.trim();
   
-  if (fixed.length > 0) {
-    fixed = fixed.charAt(0).toUpperCase() + fixed.slice(1);
-  }
+  // Remove any remaining special symbols
+  fixed = fixed.replace(/[^\w\s.,!?;:()\-'"]/g, '');
   
+  if (fixed.length === 0) return '';
+  
+  // Capitalize first letter
+  fixed = fixed.charAt(0).toUpperCase() + fixed.slice(1);
+  
+  // Ensure proper ending punctuation
   if (!fixed.match(/[.!?]$/)) {
     fixed += '.';
   }
   
+  // Clean up spacing and punctuation
   fixed = fixed.replace(/\s+/g, ' ');
   fixed = fixed.replace(/\s([.,!?;:])/g, '$1');
-  fixed = fixed.replace(/\.+/g, '.');
+  fixed = fixed.replace(/\.{2,}/g, '.');
+  fixed = fixed.replace(/,{2,}/g, ',');
+  fixed = fixed.replace(/\s+\./g, '.');
   
   return fixed;
 }
@@ -56,7 +77,22 @@ function extractKeySentences(text: string, count: number = 8): string[] {
     .replace(/([.!?])\s+/g, '$1|||')
     .split('|||')
     .map(s => s.trim())
-    .filter(s => s.length > 25 && s.length < 500 && /[a-zA-Z]/.test(s));
+    // Filter out sentences with unwanted characters or patterns
+    .filter(s => {
+      // Must have letters
+      if (!/[a-zA-Z]/.test(s)) return false;
+      // Must be reasonable length
+      if (s.length < 25 || s.length > 500) return false;
+      // Should not be mostly numbers or symbols
+      const alphaCount = (s.match(/[a-zA-Z]/g) || []).length;
+      if (alphaCount < s.length * 0.5) return false;
+      // Should not have excessive special characters
+      const specialCount = (s.match(/[^\w\s.,!?;:()\-'"]/g) || []).length;
+      if (specialCount > 5) return false;
+      return true;
+    })
+    // Clean each sentence
+    .map(s => cleanSummaryText(s));
   
   if (sentences.length === 0) return [];
   if (sentences.length <= count) return sentences;
@@ -88,12 +124,29 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
     await initializeModel();
     console.log('🤖 BERT AI summarization starting...');
     
+    // Deep clean the input text
     const cleanText = text
+      // Remove URLs
       .replace(/https?:\/\/[^\s]+/gi, '')
       .replace(/www\.[^\s]+/gi, '')
+      // Remove email addresses
+      .replace(/[\w.-]+@[\w.-]+\.\w+/gi, '')
+      // Remove reference markers
       .replace(/\[\d+\]/g, '')
+      .replace(/\(\d+\)/g, '')
+      // Remove special symbols (keep basic punctuation)
+      .replace(/[^\w\s.,!?;:()\-'"—–]/g, ' ')
+      // Remove bullets and list markers
+      .replace(/^[\s]*[•▪▫■□●○◆◇★☆►▸]+[\s]*/gm, '')
+      // Remove short citations and references in parentheses
       .replace(/\([^)]{0,50}\)/g, '')
+      // Fix spacing
       .replace(/\s+/g, ' ')
+      // Remove multiple punctuation
+      .replace(/\.{2,}/g, '.')
+      .replace(/,{2,}/g, ',')
+      .replace(/!{2,}/g, '!')
+      .replace(/\?{2,}/g, '?')
       .trim();
     
     if (cleanText.length < 50) {
@@ -142,13 +195,26 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
     // Combine BERT-extracted sentences with original text for comprehensive analysis
     const combinedText = extractedSentences.join(' ') + ' ' + cleanText;
     
-    // Extract all meaningful sentences
+    // Extract all meaningful sentences with strict filtering
     const allSentences = combinedText
       .replace(/([.!?])\s+/g, '$1|||')
       .split('|||')
       .map(s => s.trim())
-      .filter(s => s.length > 25 && s.length < 600 && /[a-zA-Z]/.test(s))
-      .map(s => fixSentence(s));
+      .filter(s => {
+        // Must have letters
+        if (!/[a-zA-Z]/.test(s)) return false;
+        // Must be reasonable length
+        if (s.length < 25 || s.length > 600) return false;
+        // Should not be mostly numbers or symbols
+        const alphaCount = (s.match(/[a-zA-Z]/g) || []).length;
+        if (alphaCount < s.length * 0.5) return false;
+        // Should not have excessive special characters
+        const specialCount = (s.match(/[^\w\s.,!?;:()\-'"]/g) || []).length;
+        if (specialCount > 8) return false;
+        return true;
+      })
+      .map(s => fixSentence(s))
+      .filter(s => s.length > 0); // Remove empty sentences after fixing
     
     console.log(`📝 Extracted ${allSentences.length} sentences...`);
     
@@ -197,6 +263,8 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
       para1 = `"${metadata.title}" explores important concepts and themes in this domain.`;
     }
     
+    // Clean paragraph 1
+    para1 = cleanSummaryText(para1);
     para1 = fixSentence(para1);
     
     const currentP1Words = para1.split(/\s+/).length;
@@ -208,6 +276,9 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
       para1 = words.slice(0, 205).join(' ');
       if (!para1.match(/[.!?]$/)) para1 += '.';
     }
+    
+    // Final cleanup for paragraph 1
+    para1 = cleanSummaryText(para1);
     
     let para2Sentences: string[] = [];
     let para2WordCount = 0;
@@ -227,6 +298,9 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
     }
     
     let para2 = para2Sentences.join(' ');
+    
+    // Clean paragraph 2
+    para2 = cleanSummaryText(para2);
     para2 = fixSentence(para2);
     
     const currentP2Words = para2.split(/\s+/).length;
@@ -238,6 +312,9 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
       para2 = words.slice(0, 305).join(' ');
       if (!para2.match(/[.!?]$/)) para2 += '.';
     }
+    
+    // Final cleanup for paragraph 2
+    para2 = cleanSummaryText(para2);
     
     console.log(`📊 Para1: ${para1.split(/\s+/).length} words, Para2: ${para2.split(/\s+/).length} words`);
     
@@ -251,8 +328,17 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
       // Keep sentences more intact for better meaning
       let bullet = sent.trim();
       
+      // Remove any remaining special symbols
+      bullet = bullet.replace(/[^\w\s.,!?;:()\-'"]/g, ' ');
+      
       // Only remove very common starting words that don't add meaning
       bullet = bullet.replace(/^(However, |Moreover, |Furthermore, |Additionally, |Therefore, |Thus, |Also, |Meanwhile, )/i, '');
+      
+      // Clean up extra spaces and punctuation
+      bullet = bullet.replace(/\s+/g, ' ').trim();
+      bullet = bullet.replace(/\s([.,!?;:])/g, '$1');
+      bullet = bullet.replace(/\.{2,}/g, '.');
+      bullet = bullet.replace(/,{2,}/g, ',');
       
       if (bullet.length < 25) continue;
       
@@ -270,13 +356,16 @@ export async function generateBookSummary(text: string, metadata: BookMetadata):
       // Ensure proper sentence formatting
       bullet = fixSentence(bullet);
       
+      // Final cleanup
+      bullet = bullet.replace(/\s+/g, ' ').trim();
+      
       // Ensure proper ending punctuation
       if (!bullet.match(/[.!?]$/)) {
         bullet += '.';
       }
       
       // Accept bullets with at least 4 words for meaningful content
-      if (bullet.split(/\s+/).length >= 4) {
+      if (bullet.split(/\s+/).length >= 4 && bullet.length >= 25) {
         bulletPoints.push(bullet);
       }
     }
