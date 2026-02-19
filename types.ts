@@ -14,6 +14,21 @@ export interface SummaryResult {
   timestamp: number;
 }
 
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+  message?: string;
+}
+
 export enum Page {
   UPLOAD = 'upload',
   HISTORY = 'history',

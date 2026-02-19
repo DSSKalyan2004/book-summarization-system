@@ -4,8 +4,7 @@ const summarySchema = new mongoose.Schema({
   book_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Book',
-    required: [true, 'Book reference is required'],
-    index: true
+    required: [true, 'Book reference is required']
   },
   summary_text: {
     type: String,

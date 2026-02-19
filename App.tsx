@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import { Page, BookMetadata, SummaryResult } from './types';
+import Auth from './components/Auth';
+import { Page, BookMetadata, SummaryResult, User } from './types';
 import { APP_NAME, NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/summarizer';
-import { summaryApi } from './services/api';
+import { summaryApi, authApi } from './services/api';
 import HistoryList from './components/HistoryList';
 import { 
   FileUp, 
@@ -23,6 +24,8 @@ import {
 } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<Page>(Page.UPLOAD);
   const [history, setHistory] = useState<SummaryResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,9 +38,30 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState('Processing...');
 
+  // Check authentication on mount
   useEffect(() => {
-    loadHistory();
+    const token = localStorage.getItem('auth_token');
+    const user = authApi.getCurrentUser();
+    if (token && user) {
+      setIsAuthenticated(true);
+      setCurrentUser(user);
+      loadHistory();
+    }
   }, []);
+
+  const handleLogin = (token: string, user: User) => {
+    setIsAuthenticated(true);
+    setCurrentUser(user);
+    loadHistory();
+  };
+
+  const handleLogout = () => {
+    authApi.logout();
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setHistory([]);
+    setActiveSummary(null);
+  };
 
   const loadHistory = async () => {
     try {
@@ -404,25 +428,36 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="flex text-slate-100 min-h-screen">
-      <Sidebar currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); setActiveSummary(null); }} />
-      <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16">
-        {currentPage === Page.UPLOAD && renderUpload()}
-        {currentPage === Page.HISTORY && renderHistory()}
-        {currentPage === Page.ABOUT && renderAbout()}
-      </main>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-zinc-800 flex justify-around p-4 z-50">
-        {NAV_ITEMS.map(item => (
-          <button 
-            key={item.id} 
-            onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 
-            className={`p-3 rounded-lg transition-all ${currentPage === item.id ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            {item.icon}
-          </button>
-        ))}
-      </nav>
-    </div>
+    <>
+      {!isAuthenticated ? (
+        <Auth onLogin={handleLogin} />
+      ) : (
+        <div className="flex text-slate-100 min-h-screen">
+          <Sidebar 
+            currentPage={currentPage} 
+            onPageChange={(p) => { setCurrentPage(p); setActiveSummary(null); }}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+          />
+          <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16">
+            {currentPage === Page.UPLOAD && renderUpload()}
+            {currentPage === Page.HISTORY && renderHistory()}
+            {currentPage === Page.ABOUT && renderAbout()}
+          </main>
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-zinc-800 flex justify-around p-4 z-50">
+            {NAV_ITEMS.map(item => (
+              <button 
+                key={item.id} 
+                onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 
+                className={`p-3 rounded-lg transition-all ${currentPage === item.id ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                {item.icon}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
+    </>
   );
 };
 

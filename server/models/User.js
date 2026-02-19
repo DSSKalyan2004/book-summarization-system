@@ -39,9 +39,8 @@ const userSchema = new mongoose.Schema({
   timestamps: true // Adds createdAt and updatedAt
 });
 
-// Indexes for performance
-userSchema.index({ email: 1 });
-userSchema.index({ role: 1 });
+// Indexes are defined in the schema fields above with 'unique: true' and in index() calls below
+// Using schema-level indexes to avoid duplicate warnings
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

@@ -16,15 +16,28 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// MongoDB Connection
+// Serve static files (for admin dashboard)
+app.use(express.static('public'));
+
+// MongoDB Connection (OPTIONAL - for now working without it)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/book-summarization';
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch((err) => console.error('❌ MongoDB connection error:', err));
+if (MONGODB_URI.includes('mongodb+srv') || MONGODB_URI.includes('mongodb://') && !MONGODB_URI.includes('localhost')) {
+  console.log('🔄 Connecting to MongoDB...');
+  mongoose.connect(MONGODB_URI)
+    .then(() => {
+      console.log('✅ MongoDB connected successfully');
+      console.log('📦 Database ready to store user accounts and summaries');
+    })
+    .catch((err) => {
+      console.log('⚠️  MongoDB not connected - using local storage');
+      console.log('   (This is OK for testing. Add MongoDB later for persistence)');
+    });
+} else {
+  console.log('📝 Running in LOCAL MODE (no MongoDB required)');
+  console.log('💡 User data stored in memory (will reset on server restart)');
+  console.log('   To enable MongoDB: Update MONGODB_URI in .env file');
+}
 
 // Routes
 app.use('/api/auth', authRoutes);

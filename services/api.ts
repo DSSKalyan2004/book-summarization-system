@@ -1,6 +1,15 @@
-import { SummaryResult } from '../types';
+import { SummaryResult, AuthResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
 
 export const summaryApi = {
   // Get all summaries
@@ -81,9 +90,13 @@ export const summaryApi = {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      const token = localStorage.getItem('auth_token');
 
       const response = await fetch(`${API_BASE_URL}/summaries/upload`, {
         method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         body: formData,
       });
 
@@ -97,5 +110,66 @@ export const summaryApi = {
       console.error('Error uploading file:', error);
       throw error;
     }
+  },
+};
+
+export const authApi = {
+  // Register a new user
+  register: async (name: string, email: string, password: string): Promise<AuthResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error registering user:', error);
+      throw error;
+    }
+  },
+
+  // Login user
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error logging in:', error);
+      throw error;
+    }
+  },
+
+  // Logout user
+  logout: () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+  },
+
+  // Check if user is authenticated
+  isAuthenticated: (): boolean => {
+    return !!localStorage.getItem('auth_token');
+  },
+
+  // Get current user
+  getCurrentUser: () => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
   },
 };

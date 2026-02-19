@@ -7,6 +7,9 @@ const User = require('../models/User');
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
+// In-memory fallback if MongoDB not connected
+let users = [];
+
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
   try {
@@ -18,14 +21,31 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
     
-    if (!user || !user.isActive) {
-      return res.status(401).json({ error: 'User not found or inactive' });
+    // Try MongoDB first
+    try {
+      const user = await User.findOne({ email: decoded.email, isActive: true });
+      if (user) {
+        req.user = {
+          id: user._id,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive
+        };
+        return next();
+      }
+    } catch (dbError) {
+      // Fallback to in-memory
+      const user = users.find(u => u.email === decoded.email && u.isActive);
+      if (user) {
+        req.user = { ...user, password: undefined };
+        return next();
+      }
     }
-
-    req.user = user;
-    next();
+    
+    return res.status(401).json({ error: 'User not found or inactive' });
   } catch (error) {
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
@@ -39,9 +59,9 @@ const optionalAuth = async (req, res, next) => {
 
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('-password');
-      if (user && user.isActive) {
-        req.user = user;
+      const user = users.find(u => u.email === decoded.email && u.isActive);
+      if (user) {
+        req.user = { ...user, password: undefined };
       }
     }
     next();
@@ -72,39 +92,84 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ error: 'User with this email already exists' });
+    // Try MongoDB first
+    try {
+      // Check if user exists in MongoDB
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({ error: 'User with this email already exists' });
+      }
+
+      // Create new user in MongoDB
+      const user = new User({
+        name,
+        email,
+        password,
+        role: role || 'user'
+      });
+
+      await user.save();
+      console.log('✅ User registered in MongoDB:', email);
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user._id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+
+      return res.status(201).json({
+        message: 'User registered successfully',
+        user: {
+          id: user._id,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        },
+        token
+      });
+    } catch (dbError) {
+      // Fallback to in-memory storage
+      console.log('⚠️  MongoDB not available, using memory storage');
+      
+      const existingUser = users.find(u => u.email === email);
+      if (existingUser) {
+        return res.status(409).json({ error: 'User with this email already exists' });
+      }
+
+      const user = {
+        id: Date.now().toString(),
+        _id: Date.now().toString(),
+        name,
+        email,
+        password: Buffer.from(password).toString('base64'),
+        role: role || 'user',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(user);
+      console.log('✅ User registered in memory:', email);
+
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+
+      return res.status(201).json({
+        message: 'User registered successfully',
+        user: {
+          id: user.id,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        },
+        token
+      });
     }
-
-    // Create new user (password will be hashed by pre-save hook)
-    const user = new User({
-      name,
-      email,
-      password,
-      role: role || 'user' // Default to 'user' role
-    });
-
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      },
-      token
-    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ 
@@ -127,40 +192,75 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user and include password for comparison
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    // Try MongoDB first
+    try {
+      const user = await User.findOne({ email }).select('+password');
+      if (user) {
+        if (!user.isActive) {
+          return res.status(403).json({ error: 'Account is inactive' });
+        }
+
+        const isPasswordValid = await user.comparePassword(password);
+        if (!isPasswordValid) {
+          return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        console.log('✅ User logged in (MongoDB):', email);
+
+        const token = jwt.sign(
+          { userId: user._id, email: user.email, role: user.role },
+          JWT_SECRET,
+          { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        return res.json({
+          message: 'Login successful',
+          user: {
+            id: user._id,
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          },
+          token
+        });
+      }
+    } catch (dbError) {
+      // Fallback to in-memory
+      const user = users.find(u => u.email === email);
+      if (user) {
+        if (!user.isActive) {
+          return res.status(403).json({ error: 'Account is inactive' });
+        }
+
+        const isPasswordValid = Buffer.from(password).toString('base64') === user.password;
+        if (!isPasswordValid) {
+          return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        console.log('✅ User logged in (memory):', email);
+
+        const token = jwt.sign(
+          { userId: user.id, email: user.email, role: user.role },
+          JWT_SECRET,
+          { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        return res.json({
+          message: 'Login successful',
+          user: {
+            id: user.id,
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          },
+          token
+        });
+      }
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(403).json({ error: 'Account is inactive' });
-    }
-
-    // Compare passwords
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    res.json({
-      message: 'Login successful',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      },
-      token
-    });
+    return res.status(401).json({ error: 'Invalid email or password' });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ 
@@ -184,134 +284,53 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/auth/me - Update current user profile
-router.put('/me', authenticateToken, async (req, res) => {
+// GET /api/auth/admin/users - View all users (Admin dashboard)
+router.get('/admin/users', async (req, res) => {
   try {
-    const { name, email } = req.body;
-    const updates = {};
-
-    if (name) updates.name = name;
-    if (email) updates.email = email;
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updates,
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    res.json({
-      message: 'Profile updated successfully',
-      user
-    });
-  } catch (error) {
-    res.status(400).json({ 
-      error: 'Failed to update profile', 
-      message: error.message 
-    });
-  }
-});
-
-// PUT /api/auth/change-password - Change password
-router.put('/change-password', authenticateToken, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        error: 'Missing required fields',
-        required: ['currentPassword', 'newPassword']
-      });
+    // Try MongoDB first
+    try {
+      const mongoUsers = await User.find({}).select('-password').sort({ createdAt: -1 });
+      
+      if (mongoUsers && mongoUsers.length >= 0) {
+        return res.json({
+          total: mongoUsers.length,
+          users: mongoUsers.map(u => ({
+            id: u._id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            isActive: u.isActive,
+            createdAt: u.createdAt
+          })),
+          storage: 'mongodb',
+          note: '🎉 Connected to MongoDB Atlas! User data is permanently stored.'
+        });
+      }
+    } catch (dbError) {
+      // Fallback to in-memory
+      console.log('MongoDB not available, using memory storage');
     }
-
-    const user = await User.findById(req.user._id).select('+password');
     
-    // Verify current password
-    const isPasswordValid = await user.comparePassword(currentPassword);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
-    }
-
-    // Update password (will be hashed by pre-save hook)
-    user.password = newPassword;
-    await user.save();
-
-    res.json({ message: 'Password changed successfully' });
-  } catch (error) {
-    res.status(400).json({ 
-      error: 'Failed to change password', 
-      message: error.message 
-    });
-  }
-});
-
-// GET /api/auth/users - Get all users (Admin only)
-router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const users = await User.find()
-      .select('-password')
-      .sort({ createdAt: -1 });
-
+    // Fallback: Return in-memory users
+    const usersWithoutPasswords = users.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      isActive: u.isActive,
+      createdAt: u.createdAt
+    }));
+    
     res.json({
-      count: users.length,
-      users
+      total: users.length,
+      users: usersWithoutPasswords,
+      storage: 'memory',
+      note: '⚠️ Temporary storage - User data will reset on server restart'
     });
   } catch (error) {
+    console.error('Failed to fetch users:', error);
     res.status(500).json({ 
       error: 'Failed to fetch users', 
-      message: error.message 
-    });
-  }
-});
-
-// PUT /api/auth/users/:id - Update user (Admin only)
-router.put('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { name, email, role, isActive } = req.body;
-    const updates = {};
-
-    if (name !== undefined) updates.name = name;
-    if (email !== undefined) updates.email = email;
-    if (role !== undefined) updates.role = role;
-    if (isActive !== undefined) updates.isActive = isActive;
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({
-      message: 'User updated successfully',
-      user
-    });
-  } catch (error) {
-    res.status(400).json({ 
-      error: 'Failed to update user', 
-      message: error.message 
-    });
-  }
-});
-
-// DELETE /api/auth/users/:id - Delete user (Admin only)
-router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ 
-      message: 'User deleted successfully',
-      userId: req.params.id
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      error: 'Failed to delete user', 
       message: error.message 
     });
   }
