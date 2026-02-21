@@ -122,6 +122,16 @@
             color: #0c5460;
         }
         
+        .badge-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
         .refresh-btn {
             background: #667eea;
             color: white;
@@ -163,7 +173,10 @@
     <div class="container">
         <div class="header">
             <h1>👨‍💼 Admin Dashboard</h1>
-            <p style="color: #666; margin-top: 10px;">User Management & Login Data</p>
+            <p style="color: #666; margin-top: 10px;">User Management & Real-Time Login Tracking</p>
+            <p style="color: #999; margin-top: 5px; font-size: 12px;">
+                🟢 Users show as "Online" if they logged in within the last 15 minutes
+            </p>
         </div>
         
         <div id="storageWarning"></div>
@@ -172,6 +185,10 @@
             <div class="stat-card">
                 <h3>Total Users</h3>
                 <div class="number" id="totalUsers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Online Now</h3>
+                <div class="number" id="onlineUsers" style="color: #28a745;">-</div>
             </div>
             <div class="stat-card">
                 <h3>Active Users</h3>
@@ -184,7 +201,10 @@
         </div>
         
         <div class="users-table">
-            <button class="refresh-btn" onclick="loadUsers()">🔄 Refresh Data</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <button class="refresh-btn" onclick="loadUsers()" style="margin: 0;">🔄 Refresh Data</button>
+                <span id="lastUpdated" style="color: #666; font-size: 14px;"></span>
+            </div>
             
             <div id="tableContainer">
                 <div class="loading">Loading user data...</div>
@@ -200,6 +220,8 @@
                 
                 // Update stats
                 document.getElementById('totalUsers').textContent = data.total;
+                document.getElementById('onlineUsers').textContent = 
+                    data.users.filter(u => u.isOnline).length;
                 document.getElementById('activeUsers').textContent = 
                     data.users.filter(u => u.isActive).length;
                 document.getElementById('storageType').textContent = 
@@ -234,6 +256,8 @@
                                 <th>Email</th>
                                 <th>Role</th>
                                 <th>Status</th>
+                                <th>Online</th>
+                                <th>Last Login</th>
                                 <th>Registered</th>
                             </tr>
                         </thead>
@@ -242,6 +266,10 @@
                 
                 data.users.forEach(user => {
                     const date = new Date(user.createdAt).toLocaleString();
+                    const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never';
+                    const onlineStatus = user.isOnline ? 'Online' : 'Offline';
+                    const onlineClass = user.isOnline ? 'online' : 'offline';
+                    
                     tableHTML += `
                         <tr>
                             <td>${user.id}</td>
@@ -251,6 +279,8 @@
                             <td><span class="badge badge-${user.isActive ? 'active' : 'inactive'}">
                                 ${user.isActive ? 'Active' : 'Inactive'}
                             </span></td>
+                            <td><span class="badge badge-${onlineClass}">${onlineStatus}</span></td>
+                            <td>${lastLogin}</td>
                             <td>${date}</td>
                         </tr>
                     `;
@@ -262,6 +292,10 @@
                 `;
                 
                 document.getElementById('tableContainer').innerHTML = tableHTML;
+                
+                // Update last updated time
+                const now = new Date().toLocaleTimeString();
+                document.getElementById('lastUpdated').textContent = `Last updated: ${now}`;
                 
             } catch (error) {
                 document.getElementById('tableContainer').innerHTML = `
@@ -275,8 +309,8 @@
         // Load users on page load
         loadUsers();
         
-        // Auto-refresh every 5 seconds
-        setInterval(loadUsers, 5000);
+        // Auto-refresh every 2 seconds for real-time updates
+        setInterval(loadUsers, 2000);
     </script>
 </body>
 </html>

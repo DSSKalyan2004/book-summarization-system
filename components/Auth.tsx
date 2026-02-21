@@ -109,12 +109,21 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     } catch (err: any) {
       // Show specific error message
       const errorMsg = err.message || 'An error occurred. Please try again.';
-      if (errorMsg.toLowerCase().includes('already exists') || errorMsg.includes('409')) {
+      
+      // Handle network/connection errors
+      if (errorMsg.toLowerCase().includes('failed to fetch') || 
+          errorMsg.toLowerCase().includes('network') ||
+          errorMsg.toLowerCase().includes('fetch')) {
+        setError('🔌 Cannot connect to server. Please ensure the backend server is running on port 5000.');
+      } else if (errorMsg.toLowerCase().includes('already exists') || errorMsg.includes('409')) {
         setError('⚠️ This email is already registered. Please use a different email or try logging in.');
-      } else if (errorMsg.toLowerCase().includes('invalid email or password')) {
+      } else if (errorMsg.toLowerCase().includes('invalid email or password') || 
+                 errorMsg.toLowerCase().includes('invalid credentials')) {
         setError('❌ Invalid email or password. Please check your credentials.');
+      } else if (errorMsg.toLowerCase().includes('user not found')) {
+        setError('❌ No account found with this email. Please sign up first.');
       } else {
-        setError(errorMsg);
+        setError(`❌ ${errorMsg}`);
       }
     } finally {
       setIsLoading(false);

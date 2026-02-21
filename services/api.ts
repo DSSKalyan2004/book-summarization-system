@@ -126,11 +126,14 @@ export const authApi = {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Registration failed');
+        throw new Error(errorData.error || errorData.message || 'Registration failed');
       }
       return await response.json();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registering user:', error);
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        throw new Error('Cannot connect to server. Please check if the backend is running.');
+      }
       throw error;
     }
   },
@@ -147,11 +150,14 @@ export const authApi = {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
+        throw new Error(errorData.error || errorData.message || 'Login failed');
       }
       return await response.json();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error logging in:', error);
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        throw new Error('Cannot connect to server. Please check if the backend is running.');
+      }
       throw error;
     }
   },

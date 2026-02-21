@@ -205,6 +205,10 @@ router.post('/login', async (req, res) => {
           return res.status(401).json({ error: 'Invalid email or password' });
         }
 
+        // Update last login timestamp
+        user.lastLogin = new Date();
+        await user.save();
+
         console.log('✅ User logged in (MongoDB):', email);
 
         const token = jwt.sign(
@@ -237,6 +241,9 @@ router.post('/login', async (req, res) => {
         if (!isPasswordValid) {
           return res.status(401).json({ error: 'Invalid email or password' });
         }
+
+        // Update last login timestamp
+        user.lastLogin = new Date().toISOString();
 
         console.log('✅ User logged in (memory):', email);
 
@@ -300,7 +307,9 @@ router.get('/admin/users', async (req, res) => {
             email: u.email,
             role: u.role,
             isActive: u.isActive,
-            createdAt: u.createdAt
+            createdAt: u.createdAt,
+            lastLogin: u.lastLogin,
+            isOnline: u.lastLogin && (new Date() - new Date(u.lastLogin)) < 15 * 60 * 1000 // Online if logged in within last 15 minutes
           })),
           storage: 'mongodb',
           note: '🎉 Connected to MongoDB Atlas! User data is permanently stored.'
@@ -318,7 +327,9 @@ router.get('/admin/users', async (req, res) => {
       email: u.email,
       role: u.role,
       isActive: u.isActive,
-      createdAt: u.createdAt
+      createdAt: u.createdAt,
+      lastLogin: u.lastLogin,
+      isOnline: u.lastLogin && (new Date() - new Date(u.lastLogin)) < 15 * 60 * 1000
     }));
     
     res.json({
