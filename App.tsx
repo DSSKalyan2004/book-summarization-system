@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
+import UsersList from './components/UsersList';
 import { Page, BookMetadata, SummaryResult, User } from './types';
-import { APP_NAME, NAV_ITEMS } from './constants';
+import { APP_NAME, NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/summarizer';
 import { summaryApi, authApi } from './services/api';
 import HistoryList from './components/HistoryList';
@@ -20,7 +21,9 @@ import {
   FileText,
   AlertCircle,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  User as UserIcon,
+  LogOut
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -427,6 +430,8 @@ const App: React.FC = () => {
     </div>
   );
 
+  const renderUsers = () => <UsersList />;
+
   return (
     <>
       {!isAuthenticated ? (
@@ -440,12 +445,33 @@ const App: React.FC = () => {
             onLogout={handleLogout}
           />
           <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16">
+            {/* Mobile user header */}
+            {currentUser && (
+              <div className="md:hidden mb-6 bg-zinc-900/60 rounded-xl p-4 border border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                    <UserIcon size={20} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-semibold truncate">{currentUser.name}</p>
+                    <p className="text-zinc-500 text-xs truncate">{currentUser.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-all text-sm font-semibold"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            )}
             {currentPage === Page.UPLOAD && renderUpload()}
             {currentPage === Page.HISTORY && renderHistory()}
+            {currentPage === Page.USERS && renderUsers()}
             {currentPage === Page.ABOUT && renderAbout()}
           </main>
           <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-zinc-800 flex justify-around p-4 z-50">
-            {NAV_ITEMS.map(item => (
+            {(currentUser?.role === 'admin' ? ADMIN_NAV_ITEMS : NAV_ITEMS).map(item => (
               <button 
                 key={item.id} 
                 onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 

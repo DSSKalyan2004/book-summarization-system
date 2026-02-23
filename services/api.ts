@@ -1,4 +1,4 @@
-import { SummaryResult, AuthResponse } from '../types';
+import { SummaryResult, AuthResponse, UsersListResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -177,5 +177,30 @@ export const authApi = {
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
+  },
+
+  // Get all users (admin only)
+  getAllUsers: async (): Promise<UsersListResponse> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to fetch users');
+      }
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        throw new Error('Cannot connect to server. Please check if the backend is running.');
+      }
+      throw error;
+    }
   },
 };

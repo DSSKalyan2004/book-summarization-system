@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NAV_ITEMS, APP_NAME } from '../constants';
+import { NAV_ITEMS, ADMIN_NAV_ITEMS, APP_NAME } from '../constants';
 import { Page, User } from '../types';
 import { Zap, LogOut, User as UserIcon } from 'lucide-react';
 
@@ -12,6 +12,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, currentUser, onLogout }) => {
+  const navItems = currentUser?.role === 'admin' ? ADMIN_NAV_ITEMS : NAV_ITEMS;
+  
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 glass border-r border-zinc-800 hidden md:flex flex-col z-50">
       <div className="p-8">
@@ -25,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, currentUse
       </div>
 
       <nav className="flex-1 px-4 space-y-1.5">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onPageChange(item.id as Page)}

@@ -21,6 +21,7 @@ export interface User {
   role: 'user' | 'admin';
   isActive: boolean;
   createdAt: string;
+  lastLogin?: string;
 }
 
 export interface AuthResponse {
@@ -29,8 +30,14 @@ export interface AuthResponse {
   message?: string;
 }
 
+export interface UsersListResponse {
+  users: User[];
+  count: number;
+}
+
 export enum Page {
   UPLOAD = 'upload',
   HISTORY = 'history',
-  ABOUT = 'about'
+  ABOUT = 'about',
+  USERS = 'users'
 }
