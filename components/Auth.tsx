@@ -65,15 +65,15 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     } catch (err: any) {
       const msg = err.message || 'An error occurred.';
       if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
-        setError('ðŸ”Œ Cannot connect to server. Please ensure the backend is running on port 5000.');
+        setError('🔌 Cannot connect to server. Please ensure the backend is running on port 5000.');
       } else if (msg.toLowerCase().includes('already exists')) {
-        setError('âš ï¸ This email is already registered. Please log in instead.');
+        setError('⚠️ This email is already registered. Please log in instead.');
       } else if (msg.toLowerCase().includes('invalid email or password') || msg.toLowerCase().includes('invalid credentials')) {
-        setError('âŒ Invalid email or password.');
+        setError('❌ Invalid email or password.');
       } else if (msg.toLowerCase().includes('user not found')) {
-        setError('âŒ No account found with this email. Please sign up first.');
+        setError('❌ No account found with this email. Please sign up first.');
       } else {
-        setError(`âŒ ${msg}`);
+        setError(`❌ ${msg}`);
       }
     } finally {
       setIsLoading(false);
@@ -180,8 +180,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"><Lock size={20} /></div>
                 <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" disabled={isLoading}
-                  className="w-full input-premium rounded-xl py-3.5 pl-12 pr-4 text-white text-base placeholder:text-zinc-500 font-medium" />
+                  disabled={isLoading} autoComplete="new-password"
+                  className="w-full input-premium rounded-xl py-3.5 pl-12 pr-4 text-white text-base font-medium" />
               </div>
             </div>
             {!isLogin && (
@@ -190,8 +190,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"><Lock size={20} /></div>
                   <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" disabled={isLoading}
-                    className="w-full input-premium rounded-xl py-3.5 pl-12 pr-4 text-white text-base placeholder:text-zinc-500 font-medium" />
+                    disabled={isLoading} autoComplete="new-password"
+                    className="w-full input-premium rounded-xl py-3.5 pl-12 pr-4 text-white text-base font-medium" />
                 </div>
               </div>
             )}
@@ -224,7 +224,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             onClick={() => { setShowAdminModal(true); setAdminError(null); setAdminEmail(''); setAdminPassword(''); }}
             className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-base shadow-lg transition-all hover:scale-[1.02] border border-indigo-500/30">
             <Shield size={22} strokeWidth={2.5} />
-            <span>ðŸ” Admin Login</span>
+            <span>Admin Login</span>
           </button>
         </div>
       </div>
@@ -279,7 +279,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                   <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#6366f1' }}><Lock size={22} /></div>
                   <input type="password" id="admin-password" value={adminPassword}
                     onChange={e => { setAdminPassword(e.target.value); setAdminError(null); }}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" disabled={isLoading}
+                    disabled={isLoading} autoComplete="new-password"
                     style={{ width: '100%', backgroundColor: '#f9fafb', border: '2px solid #d1d5db', borderRadius: '12px', padding: '14px 16px 14px 50px', fontSize: '16px', fontWeight: 500, color: '#111827', boxSizing: 'border-box', outline: 'none' }}
                     onFocus={e => (e.target.style.borderColor = '#6366f1')}
                     onBlur={e => (e.target.style.borderColor = '#d1d5db')}

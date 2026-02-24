@@ -3,14 +3,15 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
 import UsersList from './components/UsersList';
+import HistoryList from './components/HistoryList';
 import { Page, BookMetadata, SummaryResult, User } from './types';
 import { APP_NAME, NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/summarizer';
 import { summaryApi, authApi } from './services/api';
-import HistoryList from './components/HistoryList';
 import { 
   FileUp, 
-  BookText, 
+  BookText,
+  BookOpen,
   Send, 
   Loader2, 
   CheckCircle, 
@@ -66,44 +67,30 @@ const App: React.FC = () => {
     setActiveSummary(null);
   };
 
+  const historyKey = () => {
+    const user = authApi.getCurrentUser();
+    return user ? `summ_ai_history_${user._id || user.id || user.email}` : 'summ_ai_history';
+  };
+
   const loadHistory = async () => {
-    try {
-      const summaries = await summaryApi.getAll();
-      setHistory(summaries);
-    } catch (error) {
-      console.error('Failed to load history:', error);
-      // Fallback to localStorage if API fails
-      const saved = localStorage.getItem('summ_ai_history');
-      if (saved) setHistory(JSON.parse(saved));
-    }
+    const saved = localStorage.getItem(historyKey());
+    if (saved) setHistory(JSON.parse(saved));
   };
 
-  const saveToHistory = async (item: SummaryResult) => {
-    try {
-      await summaryApi.create(item);
-      const newHistory = [item, ...history];
-      setHistory(newHistory);
-    } catch (error) {
-      console.error('Failed to save to database:', error);
-      // Fallback to localStorage if API fails
-      const newHistory = [item, ...history];
-      setHistory(newHistory);
-      localStorage.setItem('summ_ai_history', JSON.stringify(newHistory));
-    }
+  const saveToHistory = (item: SummaryResult) => {
+    setHistory(prev => {
+      const newHistory = [item, ...prev];
+      localStorage.setItem(historyKey(), JSON.stringify(newHistory));
+      return newHistory;
+    });
   };
 
-  const deleteFromHistory = async (id: string) => {
-    try {
-      await summaryApi.delete(id);
-      const newHistory = history.filter(h => h.id !== id);
-      setHistory(newHistory);
-    } catch (error) {
-      console.error('Failed to delete from database:', error);
-      // Fallback to localStorage if API fails
-      const newHistory = history.filter(h => h.id !== id);
-      setHistory(newHistory);
-      localStorage.setItem('summ_ai_history', JSON.stringify(newHistory));
-    }
+  const deleteFromHistory = (id: string) => {
+    setHistory(prev => {
+      const newHistory = prev.filter(h => h.id !== id);
+      localStorage.setItem(historyKey(), JSON.stringify(newHistory));
+      return newHistory;
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -398,35 +385,33 @@ const App: React.FC = () => {
     );
   };
 
-  const renderHistory = () => {
-    return (
-      <div style={{ width: '100%', minHeight: '80vh' }}>
-        {/* HEADER - orange gradient, impossible to miss */}
-        <div style={{ background: 'linear-gradient(135deg, #f97316, #c2410c)', borderRadius: '20px', padding: '40px 32px', marginBottom: '28px', boxShadow: '0 10px 40px rgba(234,88,12,0.5)', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', backgroundColor: 'white', borderRadius: '18px', marginBottom: '20px', boxShadow: '0 6px 20px rgba(0,0,0,0.2)' }}>
-            <BookOpen size={36} color="#ea580c" strokeWidth={3} />
-          </div>
-          <h1 style={{ fontSize: '48px', fontWeight: 900, color: '#ffffff', margin: '0 0 16px 0', textShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'block' }}>
-            📚 Document History
-          </h1>
-          <div style={{ display: 'inline-block', backgroundColor: 'rgba(0,0,0,0.25)', color: '#ffffff', fontWeight: 700, fontSize: '20px', padding: '12px 32px', borderRadius: '50px' }}>
-            {history.length === 0
-              ? '🎯 Your summaries will appear here'
-              : `📖 ${history.length} ${history.length === 1 ? 'Summary' : 'Summaries'}`}
-          </div>
+  const renderHistory = () => (
+    <div style={{ width: '100%', minHeight: '80vh' }}>
+      <div style={{ background: 'linear-gradient(135deg, #f97316, #c2410c)', borderRadius: '20px', padding: '40px 32px', marginBottom: '28px', boxShadow: '0 10px 40px rgba(234,88,12,0.5)', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', backgroundColor: 'white', borderRadius: '18px', marginBottom: '20px', boxShadow: '0 6px 20px rgba(0,0,0,0.2)' }}>
+          <BookOpen size={36} color="#ea580c" strokeWidth={3} />
         </div>
-
-        {/* LIST CONTAINER - white background */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '2px solid #fed7aa' }}>
-          <HistoryList
-            items={history}
-            onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }}
-            onDelete={deleteFromHistory}
-          />
+        <h1 style={{ fontSize: '40px', fontWeight: 900, color: '#ffffff', margin: '0 0 12px 0', textShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'block' }}>
+          📚 My Document History
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '15px', margin: '0 0 16px 0', fontWeight: 600 }}>
+          Logged in as <strong>{currentUser?.email}</strong>
+        </p>
+        <div style={{ display: 'inline-block', backgroundColor: 'rgba(0,0,0,0.25)', color: '#ffffff', fontWeight: 700, fontSize: '18px', padding: '10px 28px', borderRadius: '50px' }}>
+          {history.length === 0
+            ? '🎯 No summaries yet — generate one!'
+            : `📖 ${history.length} ${history.length === 1 ? 'Summary' : 'Summaries'}`}
         </div>
       </div>
-    );
-  };
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '2px solid #fed7aa' }}>
+        <HistoryList
+          items={history}
+          onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }}
+          onDelete={deleteFromHistory}
+        />
+      </div>
+    </div>
+  );
 
   const renderAbout = () => (
     <div className="max-w-4xl mx-auto space-y-12 py-10">
