@@ -94,7 +94,6 @@ const UsersList: React.FC = () => {
       <header className="p-6 rounded-xl border border-zinc-800 bg-gradient-to-r from-orange-500/10 to-purple-500/10">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3">
             <div className="bg-orange-500/20 p-3 rounded-lg border border-orange-500/30">
               <UserPlus className="text-orange-500" size={28} />
             </div>

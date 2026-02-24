@@ -58,6 +58,9 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: str
+    isActive: bool
+    createdAt: Optional[datetime] = None
+    lastLogin: Optional[datetime] = None
 
 class TokenResponse(BaseModel):
     message: str

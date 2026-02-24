@@ -62,7 +62,10 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
                     _id=user_id,
                     name=user_data.name,
                     email=user_data.email,
-                    role=user_data.role or "user"
+                    role=user_data.role or "user",
+                    isActive=True,
+                    createdAt=user_dict["createdAt"],
+                    lastLogin=None
                 ),
                 token=token
             )
@@ -78,6 +81,7 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
                 )
             
             user_id = str(int(datetime.utcnow().timestamp() * 1000))
+            created_at = datetime.utcnow()
             user_dict = {
                 "id": user_id,
                 "_id": user_id,
@@ -86,7 +90,8 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
                 "password": base64.b64encode(user_data.password.encode()).decode(),
                 "role": user_data.role or "user",
                 "isActive": True,
-                "createdAt": datetime.utcnow().isoformat()
+                "createdAt": created_at,
+                "lastLogin": None
             }
             
             users_memory.append(user_dict)
@@ -105,7 +110,10 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
                     _id=user_id,
                     name=user_data.name,
                     email=user_data.email,
-                    role=user_data.role or "user"
+                    role=user_data.role or "user",
+                    isActive=True,
+                    createdAt=created_at,
+                    lastLogin=None
                 ),
                 token=token
             )
@@ -121,23 +129,37 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
 @router.post("/login", response_model=TokenResponse)
 async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_database)):
     """Login user"""
+    print(f"\n🔐 LOGIN ATTEMPT:")
+    print(f"   Email: {login_data.email}")
+    print(f"   DB Status: {'Connected' if db is not None else 'NOT CONNECTED (None)'}")
+    
     try:
         # Try MongoDB first
         if db is not None:
+            print(f"   🔍 Searching for user in MongoDB...")
             user = await db.users.find_one({"email": login_data.email})
             if not user:
+                print(f"   ❌ User not found in MongoDB")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid email or password"
                 )
             
+            print(f"   ✅ User found: {user.get('name')}, Role: {user.get('role')}")
+            print(f"   🔑 Verifying password...")
+            
             if not user.get("isActive", True):
+                print(f"   ❌ Account is inactive")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Account is inactive"
                 )
             
-            if not verify_password(login_data.password, user["password"]):
+            password_valid = verify_password(login_data.password, user["password"])
+            print(f"   Password valid: {password_valid}")
+            
+            if not password_valid:
+                print(f"   ❌ Password verification failed")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid email or password"
@@ -165,7 +187,10 @@ async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_da
                     _id=user_id,
                     name=user["name"],
                     email=user["email"],
-                    role=user.get("role", "user")
+                    role=user.get("role", "user"),
+                    isActive=user.get("isActive", True),
+                    createdAt=user.get("createdAt"),
+                    lastLogin=user.get("lastLogin")
                 ),
                 token=token
             )
@@ -207,7 +232,10 @@ async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_da
                     _id=user["_id"],
                     name=user["name"],
                     email=user["email"],
-                    role=user.get("role", "user")
+                    role=user.get("role", "user"),
+                    isActive=user.get("isActive", True),
+                    createdAt=user.get("createdAt"),
+                    lastLogin=user.get("lastLogin")
                 ),
                 token=token
             )
@@ -242,6 +270,7 @@ async def get_all_users(
         users = await users_cursor.to_list(length=1000)
         for user in users:
             user["id"] = str(user["_id"])
+            del user["_id"]  # Remove the ObjectId field
         return {"users": users, "count": len(users)}
     else:
         # Return memory users without password

@@ -97,12 +97,16 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         onLogin(data.token, data.user);
       } else {
         // Register
+        console.log('Starting registration...', { name: formData.name, email: formData.email });
         const data = await authApi.register(formData.name, formData.email, formData.password);
+        console.log('Registration response received:', data);
         // Auto-login after successful registration
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('Stored token and user in localStorage');
         setSuccess('Account created successfully! Logging you in...');
         setTimeout(() => {
+          console.log('Calling onLogin with user:', data.user);
           onLogin(data.token, data.user);
         }, 500);
       }
@@ -136,6 +140,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setSuccess(null);
     setFormData({ name: '', email: '', password: '', confirmPassword: '' });
   };
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">

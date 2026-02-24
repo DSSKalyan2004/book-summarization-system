@@ -398,15 +398,29 @@ const App: React.FC = () => {
     );
   };
 
-  const renderHistory = () => (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <header className="p-8 rounded-xl border border-zinc-800 bg-gradient-to-b from-zinc-900/50 to-zinc-900/30">
-        <h2 className="text-4xl font-bold text-white">Your History</h2>
-        <p className="text-zinc-400 text-base mt-2">View and manage your previous summaries</p>
-      </header>
-      <HistoryList items={history} onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }} onDelete={deleteFromHistory} />
-    </div>
-  );
+  const renderHistory = () => {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8 py-8">
+        {/* Ultra-visible header */}
+        <div className="text-center space-y-6 mb-12">
+          <div className="inline-flex items-center justify-center gap-4 mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/50 animate-pulse">
+              <BookOpen size={40} className="text-white" strokeWidth={3} />
+            </div>
+          </div>
+          <h1 className="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 drop-shadow-lg">
+            Document History
+          </h1>
+          <p className="text-white text-2xl font-semibold bg-zinc-800/80 inline-block px-8 py-4 rounded-full border-2 border-orange-500/40 shadow-lg">
+            {history.length === 0 
+              ? '🎯 Your summarized documents will appear here' 
+              : `📚 You have ${history.length} ${history.length === 1 ? 'summary' : 'summaries'}`}
+          </p>
+        </div>
+        <HistoryList items={history} onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }} onDelete={deleteFromHistory} />
+      </div>
+    );
+  };
 
   const renderAbout = () => (
     <div className="max-w-4xl mx-auto space-y-12 py-10">
@@ -437,14 +451,14 @@ const App: React.FC = () => {
       {!isAuthenticated ? (
         <Auth onLogin={handleLogin} />
       ) : (
-        <div className="flex text-slate-100 min-h-screen">
+        <div className="flex text-slate-100 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
           <Sidebar 
             currentPage={currentPage} 
             onPageChange={(p) => { setCurrentPage(p); setActiveSummary(null); }}
             currentUser={currentUser}
             onLogout={handleLogout}
           />
-          <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16">
+          <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16 min-h-screen">
             {/* Mobile user header */}
             {currentUser && (
               <div className="md:hidden mb-6 bg-zinc-900/60 rounded-xl p-4 border border-zinc-800 flex items-center justify-between">

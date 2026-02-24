@@ -117,6 +117,7 @@ export const authApi = {
   // Register a new user
   register: async (name: string, email: string, password: string): Promise<AuthResponse> => {
     try {
+      console.log('Attempting registration with:', { name, email });
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
@@ -124,11 +125,18 @@ export const authApi = {
         },
         body: JSON.stringify({ name, email, password }),
       });
+      
+      console.log('Registration response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'Registration failed');
+        console.error('Registration error response:', errorData);
+        throw new Error(errorData.detail || errorData.error || errorData.message || 'Registration failed');
       }
-      return await response.json();
+      
+      const data = await response.json();
+      console.log('Registration successful, data:', data);
+      return data;
     } catch (error: any) {
       console.error('Error registering user:', error);
       if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
