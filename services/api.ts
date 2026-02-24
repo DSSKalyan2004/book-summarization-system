@@ -12,10 +12,12 @@ const getAuthHeaders = () => {
 };
 
 export const summaryApi = {
-  // Get all summaries
+  // Get all summaries for the logged-in user (from MongoDB)
   getAll: async (): Promise<SummaryResult[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/summaries`);
+      const response = await fetch(`${API_BASE_URL}/summaries/my/all`, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch summaries');
       return await response.json();
     } catch (error) {
@@ -36,29 +38,28 @@ export const summaryApi = {
     }
   },
 
-  // Create new summary
+  // Save summary to user's permanent history (MongoDB)
   create: async (summary: SummaryResult): Promise<SummaryResult> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/summaries`, {
+      const response = await fetch(`${API_BASE_URL}/summaries/my/save`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(summary),
       });
-      if (!response.ok) throw new Error('Failed to create summary');
+      if (!response.ok) throw new Error('Failed to save summary');
       return await response.json();
     } catch (error) {
-      console.error('Error creating summary:', error);
+      console.error('Error saving summary:', error);
       throw error;
     }
   },
 
-  // Delete summary by ID
+  // Delete summary from user's history (MongoDB)
   delete: async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/summaries/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/summaries/my/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to delete summary');
     } catch (error) {

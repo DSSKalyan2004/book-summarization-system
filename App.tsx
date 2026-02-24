@@ -73,24 +73,55 @@ const App: React.FC = () => {
   };
 
   const loadHistory = async () => {
-    const saved = localStorage.getItem(historyKey());
-    if (saved) setHistory(JSON.parse(saved));
+    // Show cached version instantly while DB loads
+    const cached = localStorage.getItem(historyKey());
+    if (cached) {
+      try { setHistory(JSON.parse(cached)); } catch {}
+    }
+    // Then load from MongoDB (permanent storage)
+    try {
+      const summaries = await summaryApi.getAll();
+      setHistory(summaries);
+      localStorage.setItem(historyKey(), JSON.stringify(summaries));
+    } catch (error) {
+      console.error('Could not load history from server:', error);
+    }
   };
 
-  const saveToHistory = (item: SummaryResult) => {
+  const saveToHistory = async (item: SummaryResult) => {
+    // Update UI immediately
     setHistory(prev => {
       const newHistory = [item, ...prev];
       localStorage.setItem(historyKey(), JSON.stringify(newHistory));
       return newHistory;
     });
+    // Persist to MongoDB
+    try {
+      const saved = await summaryApi.create(item);
+      // Update the item's id to the DB-assigned one
+      setHistory(prev => {
+        const updated = prev.map(h => h.id === item.id ? { ...h, id: saved.id } : h);
+        localStorage.setItem(historyKey(), JSON.stringify(updated));
+        return updated;
+      });
+    } catch (error) {
+      console.error('Could not save to server (stored locally):', error);
+    }
   };
 
-  const deleteFromHistory = (id: string) => {
+  const deleteFromHistory = async (id: string) => {
+    // Update UI immediately
     setHistory(prev => {
       const newHistory = prev.filter(h => h.id !== id);
       localStorage.setItem(historyKey(), JSON.stringify(newHistory));
       return newHistory;
     });
+    // Delete from MongoDB
+    try {
+      await summaryApi.delete(id);
+    } catch (error) {
+      console.error('Could not delete from server:', error);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,7 +266,7 @@ const App: React.FC = () => {
       setTimeout(() => setLoadingMsg('Building summary...'), 8000);
       
       const result = await generateBookSummary(source, metadata);
-      saveToHistory(result);
+      await saveToHistory(result);
       setActiveSummary(result);
     } catch (err: any) {
       setError(err.message || "Failed to summarize. Please try again.");

@@ -125,6 +125,63 @@ async def get_all_summaries(
             detail=f"Failed to fetch summaries: {str(e)}"
         )
 
+# ─── User History Endpoints (permanent, per-user, DB-backed) ───────────────
+
+@router.get("/my/all")
+async def get_my_history(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Get all saved summaries for the current authenticated user"""
+    try:
+        user_id = current_user.get("userId") or current_user.get("email")
+        cursor = db.user_histories.find({"userId": user_id}).sort("timestamp", -1)
+        items = await cursor.to_list(length=1000)
+        for item in items:
+            item["id"] = str(item["_id"])
+            item.pop("_id", None)
+            item.pop("userId", None)
+            item.pop("savedAt", None)
+        return items
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+
+@router.post("/my/save", status_code=201)
+async def save_my_history(
+    summary_data: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Save a summary to the current user's permanent history"""
+    try:
+        user_id = current_user.get("userId") or current_user.get("email")
+        doc = {**summary_data, "userId": user_id, "savedAt": datetime.utcnow()}
+        doc.pop("_id", None)
+        result = await db.user_histories.insert_one(doc)
+        summary_data["id"] = str(result.inserted_id)
+        return summary_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save history: {str(e)}")
+
+@router.delete("/my/{item_id}", status_code=204)
+async def delete_my_history(
+    item_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Delete a summary from the current user's history"""
+    try:
+        user_id = current_user.get("userId") or current_user.get("email")
+        if ObjectId.is_valid(item_id):
+            await db.user_histories.delete_one({"_id": ObjectId(item_id), "userId": user_id})
+        else:
+            await db.user_histories.delete_one({"id": item_id, "userId": user_id})
+        return None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete history: {str(e)}")
+
+# ────────────────────────────────────────────────────────────────────────────
+
 @router.get("/{summary_id}")
 async def get_summary_by_id(
     summary_id: str,
