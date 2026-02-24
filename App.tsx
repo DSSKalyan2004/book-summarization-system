@@ -400,24 +400,30 @@ const App: React.FC = () => {
 
   const renderHistory = () => {
     return (
-      <div className="max-w-6xl mx-auto space-y-8 py-8">
-        {/* Ultra-visible header */}
-        <div className="text-center space-y-6 mb-12">
-          <div className="inline-flex items-center justify-center gap-4 mb-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/50 animate-pulse">
-              <BookOpen size={40} className="text-white" strokeWidth={3} />
-            </div>
+      <div style={{ width: '100%', minHeight: '80vh' }}>
+        {/* HEADER - orange gradient, impossible to miss */}
+        <div style={{ background: 'linear-gradient(135deg, #f97316, #c2410c)', borderRadius: '20px', padding: '40px 32px', marginBottom: '28px', boxShadow: '0 10px 40px rgba(234,88,12,0.5)', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', backgroundColor: 'white', borderRadius: '18px', marginBottom: '20px', boxShadow: '0 6px 20px rgba(0,0,0,0.2)' }}>
+            <BookOpen size={36} color="#ea580c" strokeWidth={3} />
           </div>
-          <h1 className="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 drop-shadow-lg">
-            Document History
+          <h1 style={{ fontSize: '48px', fontWeight: 900, color: '#ffffff', margin: '0 0 16px 0', textShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'block' }}>
+            📚 Document History
           </h1>
-          <p className="text-white text-2xl font-semibold bg-zinc-800/80 inline-block px-8 py-4 rounded-full border-2 border-orange-500/40 shadow-lg">
-            {history.length === 0 
-              ? '🎯 Your summarized documents will appear here' 
-              : `📚 You have ${history.length} ${history.length === 1 ? 'summary' : 'summaries'}`}
-          </p>
+          <div style={{ display: 'inline-block', backgroundColor: 'rgba(0,0,0,0.25)', color: '#ffffff', fontWeight: 700, fontSize: '20px', padding: '12px 32px', borderRadius: '50px' }}>
+            {history.length === 0
+              ? '🎯 Your summaries will appear here'
+              : `📖 ${history.length} ${history.length === 1 ? 'Summary' : 'Summaries'}`}
+          </div>
         </div>
-        <HistoryList items={history} onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }} onDelete={deleteFromHistory} />
+
+        {/* LIST CONTAINER - white background */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '2px solid #fed7aa' }}>
+          <HistoryList
+            items={history}
+            onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }}
+            onDelete={deleteFromHistory}
+          />
+        </div>
       </div>
     );
   };
@@ -458,7 +464,10 @@ const App: React.FC = () => {
             currentUser={currentUser}
             onLogout={handleLogout}
           />
-          <main className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16 min-h-screen">
+          <main
+            className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16 min-h-screen"
+            style={currentPage === Page.HISTORY ? { backgroundColor: '#fff7ed' } : {}}
+          >
             {/* Mobile user header */}
             {currentUser && (
               <div className="md:hidden mb-6 bg-zinc-900/60 rounded-xl p-4 border border-zinc-800 flex items-center justify-between">
