@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Python virtual environments
+.venv/
+.venv311/
+
+# Python compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+
 # Database files (runtime data – not committed)
 database/*.json
 

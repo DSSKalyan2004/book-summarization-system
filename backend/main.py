@@ -57,18 +57,24 @@ async def connect_to_mongo():
     global database, mongo_client
     
     last_error = None
-    for attempt in range(1, 2):  # Only 1 attempt on Python 3.7 (TLS 1.3 not supported); upgrade Python to re-enable retries
+    for attempt in range(1, 4):  # 3 attempts
         try:
             print("=" * 60)
             print(f"🚀 Connecting to MongoDB (attempt {attempt}/3)...")
             print(f"URI: {MONGODB_URI[:60]}...")
             print("=" * 60)
-            
-            mongo_client = AsyncIOMotorClient(
-                MONGODB_URI,
-                tlsInsecure=True,
-                serverSelectionTimeoutMS=10000,
-            )
+
+            # Try with certifi CA bundle first (Python 3.11+ / Linux), then
+            # fall back to tlsInsecure for older OpenSSL environments.
+            connect_kwargs = {
+                "serverSelectionTimeoutMS": 10000,
+            }
+            if attempt <= 2:
+                connect_kwargs["tlsCAFile"] = certifi.where()
+            else:
+                connect_kwargs["tlsInsecure"] = True  # last-resort fallback
+
+            mongo_client = AsyncIOMotorClient(MONGODB_URI, **connect_kwargs)
             database = mongo_client.get_database()
             
             # Test connection

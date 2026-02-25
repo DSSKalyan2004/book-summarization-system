@@ -7,9 +7,9 @@ echo.
 
 cd /d "%~dp0backend"
 
-REM ── Kill any process already on port 5000 ──────────────────────
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING 2^>nul') do (
-    echo Stopping existing process on port 5000 (PID %%a)...
+REM ── Kill any process already on port 8000 ──────────────
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING 2^>nul') do (
+    echo Stopping existing process on port 8000 (PID %%a)...
     taskkill /PID %%a /F >nul 2>&1
 )
 
@@ -35,11 +35,11 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo [2/2] Starting FastAPI server...
 echo.
-echo   URL:  http://localhost:5000
-echo   Docs: http://localhost:5000/docs
+echo   URL:  http://localhost:8000
+echo   Docs: http://localhost:8000/docs
 echo.
 echo Press Ctrl+C to stop the server
 echo.
 
-%PYTHON% -m uvicorn main:app --host 0.0.0.0 --port 5000 --reload
+%PYTHON% -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 pause
