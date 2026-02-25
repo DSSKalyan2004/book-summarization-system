@@ -217,10 +217,17 @@ async def shutdown_event():
     print("✅ Cleanup complete")
 
 # CORS Middleware
-# FRONTEND_URL env var = your Vercel URL e.g. https://my-app.vercel.app
-# Falls back to "*" for local dev
+# FRONTEND_URL env var accepts one or more comma-separated URLs
+# e.g. "https://myapp.vercel.app,https://myapp.onrender.com"
+# Falls back to "*" for local dev (allows all origins)
 _frontend_url = os.getenv("FRONTEND_URL", "")
-_allowed_origins = [_frontend_url] if _frontend_url else ["*"]
+if _frontend_url:
+    # Split comma-separated URLs and strip whitespace
+    _allowed_origins = [u.strip().rstrip("/") for u in _frontend_url.split(",") if u.strip()]
+else:
+    _allowed_origins = ["*"]
+
+print(f"🌐 CORS allowed origins: {_allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
