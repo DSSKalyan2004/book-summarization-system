@@ -1,0 +1,35 @@
+[
+  {
+    "id": "memory-admin-001",
+    "_id": "memory-admin-001",
+    "name": "Kalyan Admin",
+    "email": "kalyan@gmail.com",
+    "password": "$2b$12$t9BEkrc2atKxVAtJhvazAOLQNfHK1JtfFq4TLk2iLHoWnCCD671pu",
+    "role": "admin",
+    "isActive": true,
+    "createdAt": "2026-02-25 11:11:07.288182",
+    "lastLogin": "2026-02-25 14:10:55.127978"
+  },
+  {
+    "id": "1771998856722",
+    "_id": "1771998856722",
+    "name": "sai",
+    "email": "sai@gmail.com",
+    "password": "$2b$12$E7rXWOULaBDTS7qysWCelekJPKGQLPlJIqypgbEwwWeGHvnoGZM.K",
+    "role": "user",
+    "isActive": true,
+    "createdAt": "2026-02-25 11:24:16.722029",
+    "lastLogin": "2026-02-25 11:25:33.190902"
+  },
+  {
+    "id": "1771998962505",
+    "_id": "1771998962505",
+    "name": "shiva",
+    "email": "shiva@gmail.com",
+    "password": "$2b$12$/2PwDuC1nk.VH03f5LbvIOUqeP0XkHECCY6QoIDzyF7Nq2uxskQYO",
+    "role": "user",
+    "isActive": true,
+    "createdAt": "2026-02-25 11:26:02.505086",
+    "lastLogin": null
+  }
+]
