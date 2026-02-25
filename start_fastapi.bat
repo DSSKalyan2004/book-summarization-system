@@ -5,7 +5,7 @@ echo   Book Summarization Platform - FastAPI Backend
 echo ================================================
 echo.
 
-cd /d "%~dp0server"
+cd /d "%~dp0backend"
 
 REM ── Kill any process already on port 5000 ──────────────────────
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING 2^>nul') do (

@@ -8,7 +8,7 @@ echo ""
 echo "Starting FastAPI server setup..."
 echo ""
 
-cd server
+cd backend
 
 echo "[1/2] Installing Python dependencies..."
 echo ""

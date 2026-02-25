@@ -6,6 +6,11 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const backendUrl = env.VITE_BACKEND_URL || 'http://localhost:8000';
     return {
+      root: './frontend',
+      build: {
+        outDir: '../dist',
+        emptyOutDir: true,
+      },
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -33,7 +38,7 @@ export default defineConfig(({ mode }) => {
       plugins: [react()],
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': path.resolve(__dirname, './frontend'),
         }
       }
     };

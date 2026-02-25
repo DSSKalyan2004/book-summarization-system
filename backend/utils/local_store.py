@@ -3,7 +3,7 @@ local_store.py
 ───────────────
 Persistent JSON file storage used as the fallback when MongoDB is unavailable.
 All user accounts and summaries written here survive server restarts.
-Files are stored in  server/data/  (auto-created).
+Files are stored in  database/  (auto-created).
 """
 
 import json
@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 
 # ── Storage directory ──────────────────────────────────────────
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "database"
 DATA_DIR.mkdir(exist_ok=True)
 
 USERS_FILE        = DATA_DIR / "users.json"

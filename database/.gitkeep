@@ -1,0 +1,4 @@
+# This file exists only to preserve the database/ directory in git.
+# The actual JSON data files (users.json, history.json, login_events.json)
+# are runtime data and are excluded via .gitignore.
+# They are auto-created by the backend on first startup.
