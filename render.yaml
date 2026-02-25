@@ -29,7 +29,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://book-summarization-api.onrender.com/api
+        value: https://intelligent-book-summarization-platform.onrender.com/api
     headers:
       - path: /*
         name: Cache-Control
