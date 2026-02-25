@@ -66,9 +66,8 @@ async def connect_to_mongo():
             
             mongo_client = AsyncIOMotorClient(
                 MONGODB_URI,
-                tlsCAFile=certifi.where(),
-                tlsAllowInvalidCertificates=True,
-                serverSelectionTimeoutMS=5000,  # 5 s per attempt
+                tlsInsecure=True,
+                serverSelectionTimeoutMS=10000,
             )
             database = mongo_client.get_database()
             
