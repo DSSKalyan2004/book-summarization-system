@@ -2,7 +2,7 @@ import { SummaryResult, AuthResponse, UsersListResponse, LoginEvent } from '../t
 
 // Use relative path so Vite proxy forwards /api → http://localhost:5000/api
 // In production, set VITE_API_URL to your deployed backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || '/api';
 
 // ── Retry helper ────────────────────────────────────────────────
 const MAX_RETRIES = 3;
