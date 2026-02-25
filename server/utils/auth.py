@@ -12,7 +12,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT settings
 JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRES_IN = os.getenv("JWT_EXPIRES_IN", "7d")
+JWT_EXPIRES_IN = os.getenv("JWT_EXPIRES_IN", "3650d")
 
 # Security scheme
 security = HTTPBearer()
@@ -26,10 +26,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 def create_access_token(data: dict) -> str:
-    """Create a JWT access token"""
+    """Create a JWT access token — default lifetime is 10 years (effectively permanent)"""
     to_encode = data.copy()
-    
-    # Parse expires_in (support formats like '7d', '24h', '60m')
+
+    # Parse expires_in (support formats like '7d', '24h', '60m', '3650d')
     expires_in_str = JWT_EXPIRES_IN
     if expires_in_str.endswith('d'):
         days = int(expires_in_str[:-1])
@@ -41,8 +41,8 @@ def create_access_token(data: dict) -> str:
         minutes = int(expires_in_str[:-1])
         expire = datetime.utcnow() + timedelta(minutes=minutes)
     else:
-        expire = datetime.utcnow() + timedelta(days=7)  # default 7 days
-    
+        expire = datetime.utcnow() + timedelta(days=3650)  # default 10 years
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
@@ -52,9 +52,9 @@ def decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
-    except JWTError:
+    except JWTError as e:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
         )
 

@@ -16,6 +16,9 @@ bcrypt==3.2.2
 PyPDF2==1.26.0
 python-docx==0.8.11
 
+# SSL / CA Certificates
+certifi
+
 # Environment & Configuration
 python-dotenv==0.19.2
 

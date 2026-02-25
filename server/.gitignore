@@ -5,3 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
+
+# Local persistent storage (contains hashed passwords / user data — keep private)
+data/
+uploads/
+__pycache__/
+*.pyc

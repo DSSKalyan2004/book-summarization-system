@@ -133,16 +133,24 @@ async def get_my_history(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Get all saved summaries for the current authenticated user"""
+    user_id = current_user.get("userId") or current_user.get("email")
     try:
-        user_id = current_user.get("userId") or current_user.get("email")
-        cursor = db.user_histories.find({"userId": user_id}).sort("timestamp", -1)
-        items = await cursor.to_list(length=1000)
-        for item in items:
-            item["id"] = str(item["_id"])
-            item.pop("_id", None)
-            item.pop("userId", None)
-            item.pop("savedAt", None)
-        return items
+        if db is not None:
+            cursor = db.user_histories.find({"userId": user_id}).sort("timestamp", -1)
+            items = await cursor.to_list(length=1000)
+            for item in items:
+                item["id"] = str(item["_id"])
+                item.pop("_id", None)
+                item.pop("userId", None)
+                item.pop("savedAt", None)
+            return items
+        else:
+            # Fallback: read from disk
+            from utils.local_store import get_user_history
+            items = get_user_history(user_id)
+            for item in items:
+                item.pop("userId", None)
+            return items
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
 
@@ -153,13 +161,21 @@ async def save_my_history(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Save a summary to the current user's permanent history"""
+    user_id = current_user.get("userId") or current_user.get("email")
     try:
-        user_id = current_user.get("userId") or current_user.get("email")
-        doc = {**summary_data, "userId": user_id, "savedAt": datetime.utcnow()}
-        doc.pop("_id", None)
-        result = await db.user_histories.insert_one(doc)
-        summary_data["id"] = str(result.inserted_id)
-        return summary_data
+        if db is not None:
+            doc = {**summary_data, "userId": user_id, "savedAt": datetime.utcnow()}
+            doc.pop("_id", None)
+            result = await db.user_histories.insert_one(doc)
+            summary_data["id"] = str(result.inserted_id)
+            return summary_data
+        else:
+            # Fallback: persist to disk
+            from utils.local_store import add_history_item
+            import uuid
+            summary_data["id"] = summary_data.get("id") or str(uuid.uuid4())
+            add_history_item({**summary_data, "userId": user_id, "savedAt": str(datetime.utcnow())})
+            return summary_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save history: {str(e)}")
 
@@ -170,12 +186,16 @@ async def delete_my_history(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Delete a summary from the current user's history"""
+    user_id = current_user.get("userId") or current_user.get("email")
     try:
-        user_id = current_user.get("userId") or current_user.get("email")
-        if ObjectId.is_valid(item_id):
-            await db.user_histories.delete_one({"_id": ObjectId(item_id), "userId": user_id})
+        if db is not None:
+            if ObjectId.is_valid(item_id):
+                await db.user_histories.delete_one({"_id": ObjectId(item_id), "userId": user_id})
+            else:
+                await db.user_histories.delete_one({"id": item_id, "userId": user_id})
         else:
-            await db.user_histories.delete_one({"id": item_id, "userId": user_id})
+            from utils.local_store import delete_history_item
+            delete_history_item(item_id, user_id)
         return None
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete history: {str(e)}")

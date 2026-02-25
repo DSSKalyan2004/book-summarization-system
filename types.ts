@@ -36,6 +36,14 @@ export interface UsersListResponse {
   count: number;
 }
 
+export interface LoginEvent {
+  userId: string;
+  email: string;
+  name: string;
+  role: string;
+  timestamp: string;
+}
+
 export enum Page {
   UPLOAD = 'upload',
   HISTORY = 'history',

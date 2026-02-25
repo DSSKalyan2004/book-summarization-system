@@ -7,7 +7,7 @@ import HistoryList from './components/HistoryList';
 import { Page, BookMetadata, SummaryResult, User } from './types';
 import { APP_NAME, NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/summarizer';
-import { summaryApi, authApi } from './services/api';
+import { summaryApi, authApi, checkServerHealth } from './services/api';
 import { 
   FileUp, 
   BookText,
@@ -41,16 +41,75 @@ const App: React.FC = () => {
   const [fileInputName, setFileInputName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState('Processing...');
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null); // null = checking
+  const [justReconnected, setJustReconnected] = useState(false); // green flash on reconnect
 
-  // Check authentication on mount
+  // Poll fast (5 s) when offline, slow (30 s) when online
+  // Banner clears within 5 s of the server starting
+  useEffect(() => {
+    let isMounted = true;
+    let interval: ReturnType<typeof setInterval>;
+
+    const checkHealth = async () => {
+      const ok = await checkServerHealth();
+      if (!isMounted) return;
+      setServerOnline(prev => {
+        // Server just came back online — show green flash
+        if (prev === false && ok) {
+          setJustReconnected(true);
+          setTimeout(() => setJustReconnected(false), 3000);
+        }
+        return ok;
+      });
+      // Reschedule: 5 s when offline, 30 s when online
+      clearInterval(interval);
+      interval = setInterval(checkHealth, ok ? 30000 : 5000);
+    };
+
+    checkHealth();
+    interval = setInterval(checkHealth, 5000); // start fast until first success
+    return () => { isMounted = false; clearInterval(interval); };
+  }, []);
+
+  // Check authentication on mount — validate token with server
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
-    const user = authApi.getCurrentUser();
-    if (token && user) {
+    const cachedUser = authApi.getCurrentUser();
+
+    if (token && cachedUser) {
+      // ✅ Show cached user IMMEDIATELY — UI is instant, user is never blocked
       setIsAuthenticated(true);
-      setCurrentUser(user);
+      setCurrentUser(cachedUser);
       loadHistory();
+
+      // Then verify in the background:
+      // - Server offline → stays logged in (valid: true with cached user)
+      // - Server rejects token (401/403) → logs out cleanly
+      // - Server OK → updates user data silently + refreshes token
+      authApi.verifyAndRefreshSession().then(result => {
+        if (!result.valid) {
+          // Genuine token rejection from server — logout
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          setHistory([]);
+          setActiveSummary(null);
+        } else if (result.user) {
+          // Silently update with fresh user data from server
+          setCurrentUser(result.user);
+        }
+        // If server was offline (valid: true, user: cachedUser) — nothing changes, user stays in
+      });
     }
+
+    // Auto-logout when a real data API call returns 401 mid-session
+    const onSessionExpired = () => {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      setHistory([]);
+      setActiveSummary(null);
+    };
+    window.addEventListener('session-expired', onSessionExpired);
+    return () => window.removeEventListener('session-expired', onSessionExpired);
   }, []);
 
   const handleLogin = (token: string, user: User) => {
@@ -468,8 +527,56 @@ const App: React.FC = () => {
 
   const renderUsers = () => <UsersList />;
 
+  // Server status banner (shown at top of page)
+  const ServerBanner = () => {
+    if (justReconnected) return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+        backgroundColor: '#14532d', color: '#fff', fontSize: '13px', fontWeight: 600,
+        padding: '8px 16px', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', gap: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+        transition: 'opacity 0.5s'
+      }}>
+        <span style={{ fontSize: '18px' }}>✅</span> Connected to server!
+      </div>
+    );
+    if (serverOnline === true) return null; // fully hidden when connected
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+        backgroundColor: serverOnline === null ? '#1e3a5f' : '#7f1d1d',
+        color: '#fff', fontSize: '13px', fontWeight: 600,
+        padding: '8px 16px', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', gap: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+      }}>
+        <span style={{ fontSize: '18px' }}>{serverOnline === null ? '⏳' : '🔴'}</span>
+        {serverOnline === null
+          ? 'Connecting to backend server…'
+          : 'Cannot connect to server — run start_fastapi.bat to start the backend.'}
+        {serverOnline === false && (
+          <button
+            onClick={async () => {
+              setServerOnline(null);
+              const ok = await checkServerHealth();
+              setServerOnline(ok);
+              if (ok) { setJustReconnected(true); setTimeout(() => setJustReconnected(false), 3000); }
+            }}
+            style={{
+              marginLeft: '12px', padding: '4px 12px', borderRadius: '6px',
+              backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
+              color: '#fff', cursor: 'pointer', fontSize: '12px'
+            }}
+          >
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
+      <ServerBanner />
       {!isAuthenticated ? (
         <Auth onLogin={handleLogin} />
       ) : (
