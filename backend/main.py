@@ -69,10 +69,14 @@ async def connect_to_mongo():
             connect_kwargs = {
                 "serverSelectionTimeoutMS": 10000,
             }
-            if attempt <= 2:
+            if attempt == 1:
                 connect_kwargs["tlsCAFile"] = certifi.where()
+            elif attempt == 2:
+                # Railway/Nix OpenSSL is incompatible with Atlas TLS — skip cert verification
+                connect_kwargs["tlsInsecure"] = True
             else:
-                connect_kwargs["tlsInsecure"] = True  # last-resort fallback
+                # Last resort: disable TLS entirely for older environments
+                connect_kwargs["tls"] = False
 
             mongo_client = AsyncIOMotorClient(MONGODB_URI, **connect_kwargs)
             database = mongo_client.get_database()
