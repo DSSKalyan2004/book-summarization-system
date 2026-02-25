@@ -1,0 +1,10 @@
+# Railway config for the FRONTEND (Vite React static site)
+[build]
+builder = "nixpacks"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+startCommand = "npm run serve:prod"
+
+[environments.production.variables]
+NODE_ENV = "production"

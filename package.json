@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "serve:prod": "serve dist -l $PORT --single",
     "server": "cd backend && ../.venv/Scripts/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "start": "concurrently \"npm run dev\" \"npm run server\""
   },
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "serve": "^14.2.5",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
