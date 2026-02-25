@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
-        allowedHosts: 'all',
+        allowedHosts: 'intelligent-book-summarization-plat.vercel.app',
         proxy: {
           '/api': {
             target: backendUrl,
