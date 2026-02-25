@@ -89,10 +89,10 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
                 "_id": user_id,
                 "name": user_data.name,
                 "email": user_data.email,
-                "password": base64.b64encode(user_data.password.encode()).decode(),
+                "password": hash_password(user_data.password),  # bcrypt — same as admin
                 "role": user_data.role or "user",
                 "isActive": True,
-                "createdAt": created_at,
+                "createdAt": str(created_at),
                 "lastLogin": None
             }
             
