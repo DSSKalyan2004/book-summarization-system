@@ -43,6 +43,15 @@ const App: React.FC = () => {
   const [loadingMsg, setLoadingMsg] = useState('Processing...');
   const [serverOnline, setServerOnline] = useState<boolean | null>(null); // null = checking
   const [justReconnected, setJustReconnected] = useState(false); // green flash on reconnect
+  const [serverOfflineSince, setServerOfflineSince] = useState<number | null>(null); // timestamp when first went offline
+  const [, forceTickUpdate] = useState(0); // 1-second tick for waking-up counter
+
+  // 1-second tick while server is offline so the "Xsecond" counter updates live
+  useEffect(() => {
+    if (serverOnline !== false && serverOnline !== null) return;
+    const t = setInterval(() => forceTickUpdate(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [serverOnline]);
 
   // Poll fast (5 s) when offline, slow (30 s) when online
   // Banner clears within 5 s of the server starting
@@ -54,10 +63,16 @@ const App: React.FC = () => {
       const ok = await checkServerHealth();
       if (!isMounted) return;
       setServerOnline(prev => {
-        // Server just came back online — show green flash
-        if (prev === false && ok) {
-          setJustReconnected(true);
-          setTimeout(() => setJustReconnected(false), 3000);
+        if (ok) {
+          // Server just came back online — show green flash
+          if (prev === false || prev === null) {
+            setJustReconnected(true);
+            setTimeout(() => setJustReconnected(false), 3000);
+          }
+          setServerOfflineSince(null); // reset wake-up timer
+        } else {
+          // Record the first moment the server was unreachable
+          setServerOfflineSince(ts => ts ?? Date.now());
         }
         return ok;
       });
@@ -541,25 +556,43 @@ const App: React.FC = () => {
       </div>
     );
     if (serverOnline === true) return null; // fully hidden when connected
+
+    // Render free-tier cold start takes ~50 s. Show a friendly waking-up
+    // banner for the first 90 s, then show a real error.
+    const offlineMs = serverOfflineSince ? Date.now() - serverOfflineSince : 0;
+    const isWakingUp = serverOnline === null || offlineMs < 90_000;
+    const secsWaiting = Math.min(Math.round(offlineMs / 1000), 90);
+
     return (
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        backgroundColor: serverOnline === null ? '#1e3a5f' : '#7f1d1d',
+        backgroundColor: isWakingUp ? '#1e3a5f' : '#7f1d1d',
         color: '#fff', fontSize: '13px', fontWeight: 600,
-        padding: '8px 16px', display: 'flex', alignItems: 'center',
+        padding: '10px 16px', display: 'flex', alignItems: 'center',
         justifyContent: 'center', gap: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
       }}>
-        <span style={{ fontSize: '18px' }}>{serverOnline === null ? '⏳' : '🔴'}</span>
-        {serverOnline === null
-          ? 'Connecting to backend server…'
-          : import.meta.env.DEV
-            ? 'Cannot connect to server — run start_fastapi.bat to start the backend.'
-            : '❌ Cannot connect to server. The backend may be starting up — please wait a moment and retry.'}
-        {serverOnline === false && (
+        {isWakingUp ? (
+          // Spinner
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        ) : (
+          <span style={{ fontSize: '16px' }}>🔴</span>
+        )}
+        {isWakingUp
+          ? secsWaiting < 5
+            ? 'Connecting to server…'
+            : `Server is waking up on Render free tier — please wait… (${secsWaiting}s)`
+          : 'Cannot connect to server. It may be down — try refreshing the page.'}
+        {!isWakingUp && (
           <button
             onClick={async () => {
+              setServerOfflineSince(null);
               setServerOnline(null);
               const ok = await checkServerHealth();
+              if (!ok) setServerOfflineSince(Date.now());
               setServerOnline(ok);
               if (ok) { setJustReconnected(true); setTimeout(() => setJustReconnected(false), 3000); }
             }}
