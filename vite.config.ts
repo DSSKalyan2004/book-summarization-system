@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        allowedHosts: "intelligent-book-summarization-platform.onrender.com",
         proxy: {
           '/api': {
             target: backendUrl,

@@ -552,7 +552,9 @@ const App: React.FC = () => {
         <span style={{ fontSize: '18px' }}>{serverOnline === null ? '⏳' : '🔴'}</span>
         {serverOnline === null
           ? 'Connecting to backend server…'
-          : 'Cannot connect to server — run start_fastapi.bat to start the backend.'}
+          : import.meta.env.DEV
+            ? 'Cannot connect to server — run start_fastapi.bat to start the backend.'
+            : '❌ Cannot connect to server. The backend may be starting up — please wait a moment and retry.'}
         {serverOnline === false && (
           <button
             onClick={async () => {
