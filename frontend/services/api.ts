@@ -52,19 +52,10 @@ async function fetchWithRetry(
 }
 
 // ── Health check ─────────────────────────────────────────────────
-// Uses a 10-second timeout — long enough for Render/Railway cold starts.
-// The banner stays in "waking up" state for 90 s before showing an error.
+// Returns true immediately — banner disabled for production deployment.
+// The backend health is checked implicitly by API calls succeeding.
 export const checkServerHealth = async (): Promise<boolean> => {
-  try {
-    const controller = new AbortController();
-    // 10 s — generous enough to handle Render free-tier cold starts
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-    const response = await fetch(`${API_BASE_URL}/health`, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch {
-    return false;
-  }
+  return true;
 };
 
 // Helper function to get auth headers
