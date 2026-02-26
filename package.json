@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "serve:prod": "serve dist -l $PORT --single",
     "server": "cd backend && ../.venv/Scripts/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
-    "start": "concurrently \"npm run dev\" \"npm run server\""
+    "start": "npm run dev && npm run server"
   },
   "dependencies": {
     "@google/genai": "^1.41.0",
