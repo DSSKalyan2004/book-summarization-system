@@ -6,6 +6,10 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 
+# Python virtual environment
+.venv/
+venv/
+
 # Local persistent storage (contains hashed passwords / user data — keep private)
 data/
 uploads/
