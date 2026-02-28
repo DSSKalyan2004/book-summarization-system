@@ -82,11 +82,10 @@ async def extract_from_pdf(file_path: str) -> str:
     try:
         text = ""
         with open(file_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfFileReader(file)
+            pdf_reader = PyPDF2.PdfReader(file)
             
-            for page_num in range(pdf_reader.numPages):
-                page = pdf_reader.getPage(page_num)
-                page_text = page.extractText()
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
         

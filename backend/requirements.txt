@@ -14,7 +14,7 @@ passlib[bcrypt]==1.7.4
 bcrypt==3.2.2
 
 # File Processing
-PyPDF2==1.26.0
+PyPDF2==3.0.1
 python-docx==0.8.11
 
 # SSL
