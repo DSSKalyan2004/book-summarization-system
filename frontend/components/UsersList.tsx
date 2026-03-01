@@ -24,12 +24,25 @@ const UsersList: React.FC = () => {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState('');
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => { loadUsers(); }, []);
 
   useEffect(() => {
     if (tab === 'history' && !historyLoaded) loadHistory();
   }, [tab]);
+
+  // Auto-refresh every 30 seconds so logins from other devices appear automatically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadUsers();
+      if (historyLoaded) {
+        setHistoryLoaded(false);
+        loadHistory();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [historyLoaded]);
 
   useEffect(() => {
     const q = search.toLowerCase().trim();
@@ -54,6 +67,7 @@ const UsersList: React.FC = () => {
     try {
       const res = await authApi.getAllUsers();
       setUsers(res.users); setFiltered(res.users);
+      setLastUpdated(new Date());
     } catch (err: any) { setUsersError(err.message || 'Failed to load users'); }
     finally { setLoadingUsers(false); }
   };
@@ -63,6 +77,7 @@ const UsersList: React.FC = () => {
     try {
       const res = await authApi.getLoginHistory();
       setEvents(res.events); setFilteredEvents(res.events); setHistoryLoaded(true);
+      setLastUpdated(new Date());
     } catch (err: any) { setHistoryError(err.message || 'Failed to load login history'); }
     finally { setLoadingHistory(false); }
   };
@@ -119,7 +134,12 @@ const UsersList: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">Admin Panel</h2>
-              <p className="text-zinc-400 text-sm">Users & Login History â€” stored permanently</p>
+              <p className="text-zinc-400 text-sm">Users & Login History — stored permanently</p>
+              {lastUpdated && (
+                <p className="text-zinc-500 text-xs mt-0.5">
+                  Auto-refreshes every 30s · Last updated: {lastUpdated.toLocaleTimeString()}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -280,7 +300,7 @@ const UsersList: React.FC = () => {
                 <table className="w-full">
                   <thead className="bg-zinc-900/60 border-b border-zinc-800">
                     <tr>
-                      {['#','User','Email','Role','Login Time','When'].map(h => (
+                      {['#','User','Email','Role','IP Address','Device','Login Time','When'].map(h => (
                         <th key={h} className="text-left p-4 text-zinc-400 font-semibold text-xs uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
@@ -300,6 +320,14 @@ const UsersList: React.FC = () => {
                           {event.role === 'admin'
                             ? <span className="bg-orange-500/20 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-full border border-orange-500/30 inline-flex items-center gap-1"><Shield size={10} />Admin</span>
                             : <span className="bg-blue-500/20 text-blue-400 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-500/30">User</span>}
+                        </td>
+                        <td className="p-4 text-zinc-400 font-mono text-xs whitespace-nowrap">{event.ip || '—'}</td>
+                        <td className="p-4 text-zinc-400 text-xs whitespace-nowrap">
+                          {event.userAgent
+                            ? event.userAgent.includes('Mobile') ? '📱 Mobile'
+                              : event.userAgent.includes('Tablet') ? '📟 Tablet'
+                              : '💻 Desktop'
+                            : '—'}
                         </td>
                         <td className="p-4 text-zinc-300 text-sm whitespace-nowrap">{formatDateTime(event.timestamp)}</td>
                         <td className="p-4 text-zinc-500 text-sm whitespace-nowrap">{formatRelative(event.timestamp)}</td>

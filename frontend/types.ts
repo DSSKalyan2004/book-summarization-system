@@ -42,6 +42,8 @@ export interface LoginEvent {
   name: string;
   role: string;
   timestamp: string;
+  ip?: string;
+  userAgent?: string;
 }
 
 export enum Page {

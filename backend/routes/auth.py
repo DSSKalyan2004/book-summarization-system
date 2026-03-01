@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, Request, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
 from bson import ObjectId
@@ -93,7 +93,7 @@ async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get
 
 # ================= LOGIN =================
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_database)):
+async def login(login_data: UserLogin, request: Request, db: AsyncIOMotorDatabase = Depends(get_database)):
     """Login user — MongoDB only"""
 
     print(f"\n🔐 LOGIN ATTEMPT: {login_data.email}")
@@ -129,13 +129,18 @@ async def login(login_data: UserLogin, db: AsyncIOMotorDatabase = Depends(get_da
             {"$set": {"lastLogin": login_time}}
         )
 
-        # Save login history
+        # Save login history with device/IP info
+        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        user_agent = request.headers.get("user-agent", "unknown")
+
         await db.login_events.insert_one({
             "userId": str(user["_id"]),
             "email": user["email"],
             "name": user.get("name", ""),
             "role": user.get("role", "user"),
-            "timestamp": login_time
+            "timestamp": login_time,
+            "ip": client_ip,
+            "userAgent": user_agent,
         })
 
         token = create_access_token({
@@ -239,7 +244,9 @@ async def get_login_history(
             "email": e.get("email"),
             "name": e.get("name"),
             "role": e.get("role"),
-            "timestamp": str(e.get("timestamp"))
+            "timestamp": str(e.get("timestamp")),
+            "ip": e.get("ip", "unknown"),
+            "userAgent": e.get("userAgent", "unknown"),
         })
 
     return {"events": events, "count": len(events)}
