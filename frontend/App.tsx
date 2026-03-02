@@ -372,47 +372,67 @@ const App: React.FC = () => {
         <div className="max-w-5xl mx-auto space-y-8 pb-20">
           <button 
             onClick={() => setActiveSummary(null)}
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group text-sm font-semibold bg-zinc-900/50 hover:bg-zinc-800/50 px-5 py-3 rounded-lg border border-zinc-800"
+            className="flex items-center gap-2 transition-all group text-sm font-semibold px-5 py-3 rounded-xl"
+            style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#0B3C5D', boxShadow: '0 2px 8px rgba(11,60,93,0.08)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EFF6FF'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(29,78,216,0.12)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 8px rgba(11,60,93,0.08)'; }}
           >
-            <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            <ChevronLeft size={17} className="group-hover:-translate-x-1 transition-transform" />
             <span>New Summary</span>
           </button>
 
-          <div className="card-premium p-10 md:p-14 rounded-2xl space-y-12">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-zinc-800 pb-10">
+          <div className="card-premium rounded-2xl" style={{ padding: '40px 48px' }}>
+            <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-8 mb-8" style={{ borderBottom: '1px solid #E5E7EB' }}>
               <div className="flex-1">
-                <h2 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-3">{activeSummary.metadata.title}</h2>
-                <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider">AI Summary • {new Date(activeSummary.timestamp).toLocaleDateString()}</p>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="badge badge-green">AI Summary</span>
+                  <span className="text-xs font-semibold" style={{ color: '#9ca3af' }}>{new Date(activeSummary.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold leading-tight mb-2" style={{ color: '#0B3C5D' }}>{activeSummary.metadata.title}</h2>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => copyToClipboard(fullSummaryText)} className="p-3 bg-zinc-800/70 hover:bg-zinc-700/70 rounded-lg text-zinc-300 hover:text-white transition-all" title="Copy"><Copy size={20} /></button>
-                <button onClick={() => downloadSummary(activeSummary)} className="p-3 btn-primary text-white rounded-lg" title="Download"><Download size={20} /></button>
+                <button onClick={() => copyToClipboard(fullSummaryText)}
+                  className="p-3 rounded-xl transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#0B3C5D', boxShadow: '0 2px 8px rgba(11,60,93,0.06)' }}
+                  title="Copy"
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1D4ED8'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7EB'; }}
+                ><Copy size={19} /></button>
+                <button onClick={() => downloadSummary(activeSummary)} className="p-3 btn-primary text-white rounded-xl" title="Download"><Download size={19} /></button>
               </div>
             </div>
 
-            <div className="space-y-12">
-              <div className="space-y-6">
-                <h3 className="text-orange-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-4 border-orange-500 pl-4 py-1">
-                  <BookText size={18} /> Summary
-                </h3>
-                <div className="space-y-5 bg-gradient-to-b from-zinc-900/30 to-zinc-900/50 p-8 rounded-2xl border border-zinc-800/50">
+            <div className="space-y-10">
+              <div className="space-y-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #0B3C5D, #1D4ED8)' }}></div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: '#0B3C5D' }}>
+                    <BookText size={16} /> Summary
+                  </h3>
+                </div>
+                <div className="space-y-4 p-7 rounded-2xl" style={{ background: 'rgba(11,60,93,0.03)', border: '1px solid #E5E7EB' }}>
                   {activeSummary.summaryParagraphs.map((para, i) => (
-                    <p key={i} className="text-zinc-100 leading-[2] text-lg font-normal text-justify first-letter:text-2xl first-letter:font-bold first-letter:text-orange-400 indent-8">
+                    <p key={i} className="leading-[1.9] text-base text-justify indent-6" style={{ color: '#374151', fontWeight: 400 }}>
                       {para}
                     </p>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-6 pt-4">
-                <h3 className="text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-4 border-emerald-500 pl-4 py-1">
-                  <CheckCircle size={18} /> Key Points
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-5 pt-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #059669, #0891b2)' }}></div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: '#059669' }}>
+                    <CheckCircle size={16} /> Key Insights
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
                   {activeSummary.bulletPoints.map((point, idx) => (
-                    <div key={idx} className="flex gap-4 p-6 bg-zinc-900/40 rounded-xl border border-zinc-800/60 items-start group hover:border-orange-500/30 hover:bg-zinc-900/60 transition-all">
-                      <span className="text-orange-400 font-bold text-sm mt-1 bg-orange-500/10 px-3 py-1.5 rounded-lg min-w-[2rem] text-center">{idx + 1}</span>
-                      <p className="text-zinc-200 text-[17px] leading-[1.8] flex-1 text-justify">{point}</p>
+                    <div key={idx} className="flex gap-4 p-5 rounded-xl items-start transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 8px rgba(11,60,93,0.04)' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(29,78,216,0.35)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(11,60,93,0.12)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(11,60,93,0.04)'; }}
+                    >
+                      <span className="font-bold text-xs mt-0.5 px-2.5 py-1.5 rounded-lg min-w-[2rem] text-center flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', boxShadow: '0 2px 8px rgba(11,60,93,0.3)' }}>{idx + 1}</span>
+                      <p className="text-base leading-[1.8] flex-1" style={{ color: '#374151' }}>{point}</p>
                     </div>
                   ))}
                 </div>
@@ -425,56 +445,64 @@ const App: React.FC = () => {
 
     return (
       <div className="max-w-4xl mx-auto space-y-10">
-        <header className="text-center space-y-6 py-12">
-          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider mb-6">
-            <Sparkles size={16} strokeWidth={2.5} /> AI Powered
+        <header className="text-center space-y-5 py-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'rgba(11,60,93,0.07)', border: '1px solid rgba(11,60,93,0.2)', color: '#0B3C5D' }}>
+            <Sparkles size={13} strokeWidth={2.5} /> BERT-Powered Document Intelligence
           </div>
-          <h2 className="text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">Summarize Any Document</h2>
-          <p className="text-zinc-400 text-lg font-medium max-w-2xl mx-auto leading-relaxed">Upload your files and get instant AI-powered summaries with key insights</p>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight gradient-text">Summarize Any Document</h2>
+          <p className="text-base font-medium max-w-xl mx-auto leading-relaxed" style={{ color: '#6b7280' }}>Upload PDF, DOCX, TXT files or paste URLs and get instant AI-powered summaries with key insights extracted by our BERT model.</p>
         </header>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 p-5 rounded-xl flex items-center gap-3 text-red-400 text-sm font-medium">
-            <AlertCircle size={20} className="flex-shrink-0" /> <span>{error}</span>
+          <div className="p-4 rounded-xl flex items-center gap-3 text-sm font-medium" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', color: '#dc2626' }}>
+            <AlertCircle size={18} className="flex-shrink-0" /> <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="card-premium p-8 md:p-10 rounded-2xl space-y-8">
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-zinc-300 ml-1 block">Document Title</label>
-              <input type="text" required value={metadata.title} onChange={e => setMetadata({...metadata, title: e.target.value})} placeholder="Enter your document title..." className="w-full input-premium rounded-xl p-4 text-white text-base placeholder:text-zinc-500 font-medium" />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="card-premium rounded-2xl" style={{ padding: '32px 36px' }}>
+            <div className="space-y-2.5 mb-7">
+              <label className="text-xs font-bold uppercase tracking-wider block" style={{ color: '#0B3C5D' }}>Document Title</label>
+              <input type="text" required value={metadata.title} onChange={e => setMetadata({...metadata, title: e.target.value})} placeholder="Enter your document title..." className="w-full input-premium rounded-xl font-medium" style={{ padding: '13px 16px', fontSize: '15px', color: '#0B3C5D', background: '#ffffff' }} />
             </div>
 
-            <div className="space-y-6 border-t border-zinc-800 pt-8">
-              <div className="flex gap-1 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800 max-w-md mx-auto">
+            <div className="space-y-5" style={{ borderTop: '1px solid #E5E7EB', paddingTop: '24px' }}>
+              <div className="flex gap-1 p-1 rounded-xl max-w-md mx-auto" style={{ background: '#F3F4F6', border: '1px solid #E5E7EB' }}>
                 {[
-                  { id: 'text', icon: <FileText size={18} />, label: 'Text' },
-                  { id: 'file', icon: <FileUp size={18} />, label: 'File' },
-                  { id: 'url', icon: <LinkIcon size={18} />, label: 'URL' },
+                  { id: 'text', icon: <FileText size={16} />, label: 'Paste Text' },
+                  { id: 'file', icon: <FileUp size={16} />, label: 'Upload File' },
+                  { id: 'url', icon: <LinkIcon size={16} />, label: 'From URL' },
                 ].map(mode => (
-                  <button key={mode.id} type="button" onClick={() => setInputMode(mode.id as any)} className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm transition-all ${inputMode === mode.id ? 'btn-primary text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'}`}>
+                  <button key={mode.id} type="button" onClick={() => setInputMode(mode.id as any)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-semibold text-sm transition-all"
+                    style={inputMode === mode.id ? { background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', color: '#fff', boxShadow: '0 2px 10px rgba(11,60,93,0.3)' } : { color: '#9CA3AF' }}
+                  >
                     {mode.icon} <span>{mode.label}</span>
                   </button>
                 ))}
               </div>
 
-              {inputMode === 'text' && <textarea required value={textContent} onChange={e => setTextContent(e.target.value)} placeholder="Paste your document text here..." className="w-full input-premium rounded-xl p-6 text-white text-base min-h-[320px] resize-none placeholder:text-zinc-500 leading-relaxed font-normal" />}
-              {inputMode === 'url' && <input type="url" required value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com/article" className="w-full input-premium rounded-xl p-4 text-white text-base placeholder:text-zinc-500 font-medium" />}
+              {inputMode === 'text' && <textarea required value={textContent} onChange={e => setTextContent(e.target.value)} placeholder="Paste your document text here..." className="w-full input-premium rounded-xl text-base resize-none leading-relaxed" style={{ padding: '20px', minHeight: '300px', fontWeight: 400, color: '#0B3C5D', background: '#ffffff' }} />}
+              {inputMode === 'url' && <input type="url" required value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com/article" className="w-full input-premium rounded-xl font-medium" style={{ padding: '13px 16px', fontSize: '15px', color: '#0B3C5D', background: '#ffffff' }} />}
               {inputMode === 'file' && (
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-zinc-700 rounded-xl p-16 flex flex-col items-center gap-5 bg-zinc-900/30 hover:border-orange-500/40 hover:bg-zinc-900/50 transition-all cursor-pointer group">
-                    <div className="p-5 bg-orange-500/10 rounded-2xl text-orange-500 group-hover:bg-orange-500/15 transition-all"><FileUp size={40} strokeWidth={2} /></div>
+                  <div className="rounded-2xl p-14 flex flex-col items-center gap-5 transition-all cursor-pointer" style={{ border: '2px dashed rgba(29,78,216,0.3)', background: '#EFF6FF' }}
+                    onMouseEnter={e => { const d = e.currentTarget as HTMLDivElement; d.style.borderColor = 'rgba(29,78,216,0.55)'; d.style.background = 'rgba(29,78,216,0.06)'; }}
+                    onMouseLeave={e => { const d = e.currentTarget as HTMLDivElement; d.style.borderColor = 'rgba(29,78,216,0.3)'; d.style.background = '#EFF6FF'; }}
+                  >
+                    <div className="p-5 rounded-2xl" style={{ background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', boxShadow: '0 6px 20px rgba(11,60,93,0.3)' }}>
+                      <FileUp size={36} color="#fff" strokeWidth={1.8} />
+                    </div>
                     <div className="text-center">
-                      <p className="text-white font-semibold text-base">{fileInputName || 'Click to browse or drag & drop'}</p>
-                      <p className="text-zinc-500 text-sm mt-2">PDF, DOCX, TXT • Max 50MB</p>
+                      <p className="font-bold text-base" style={{ color: fileInputName ? '#0B3C5D' : '#9CA3AF' }}>{fileInputName || 'Click to browse or drag & drop'}</p>
+                      <p className="text-sm mt-1.5" style={{ color: '#9ca3af' }}>PDF, DOCX, TXT — Max 50MB</p>
                     </div>
                     <input type="file" id="file-up" className="hidden" accept=".pdf,.docx,.txt" onChange={handleFileUpload} />
-                    <label htmlFor="file-up" className="btn-primary text-white px-8 py-3 rounded-lg text-sm font-semibold cursor-pointer">Browse Files</label>
+                    <label htmlFor="file-up" className="btn-primary text-white px-7 py-2.5 rounded-xl text-sm font-semibold cursor-pointer">Browse Files</label>
                   </div>
                   {fileInputName && textContent && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex items-center gap-3 text-emerald-400 text-sm font-medium">
-                      <CheckCircle size={20} /> <span>File ready to summarize</span>
+                    <div className="p-4 rounded-xl flex items-center gap-3 text-sm font-medium" style={{ background: 'rgba(5,150,105,0.06)', border: '1px solid rgba(5,150,105,0.2)', color: '#059669' }}>
+                      <CheckCircle size={18} /> <span>File extracted and ready — {textContent.length.toLocaleString()} characters</span>
                     </div>
                   )}
                 </div>
@@ -482,8 +510,8 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={isLoading || ((inputMode === 'text' || inputMode === 'file') && !textContent.trim())} className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none text-white py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base">
-            {isLoading ? <><Loader2 className="animate-spin" size={20} /> <span>{loadingMsg}</span></> : <><Send size={20} /> <span>Generate Summary</span> <ArrowRight size={20} /></>}
+          <button type="submit" disabled={isLoading || ((inputMode === 'text' || inputMode === 'file') && !textContent.trim())} className="w-full btn-primary disabled:cursor-not-allowed text-white py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base">
+            {isLoading ? <><Loader2 className="animate-spin" size={19} /> <span>{loadingMsg}</span></> : <><Send size={19} /> <span>Generate AI Summary</span> <ArrowRight size={19} /></>}
           </button>
         </form>
       </div>
@@ -492,23 +520,26 @@ const App: React.FC = () => {
 
   const renderHistory = () => (
     <div style={{ width: '100%', minHeight: '80vh' }}>
-      <div style={{ background: 'linear-gradient(135deg, #f97316, #c2410c)', borderRadius: '20px', padding: '40px 32px', marginBottom: '28px', boxShadow: '0 10px 40px rgba(234,88,12,0.5)', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', backgroundColor: 'white', borderRadius: '18px', marginBottom: '20px', boxShadow: '0 6px 20px rgba(0,0,0,0.2)' }}>
-          <BookOpen size={36} color="#ea580c" strokeWidth={3} />
-        </div>
-        <h1 style={{ fontSize: '40px', fontWeight: 900, color: '#ffffff', margin: '0 0 12px 0', textShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'block' }}>
-          📚 My Document History
-        </h1>
-        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '15px', margin: '0 0 16px 0', fontWeight: 600 }}>
-          Logged in as <strong>{currentUser?.email}</strong>
-        </p>
-        <div style={{ display: 'inline-block', backgroundColor: 'rgba(0,0,0,0.25)', color: '#ffffff', fontWeight: 700, fontSize: '18px', padding: '10px 28px', borderRadius: '50px' }}>
-          {history.length === 0
-            ? '🎯 No summaries yet — generate one!'
-            : `📖 ${history.length} ${history.length === 1 ? 'Summary' : 'Summaries'}`}
+      <div className="rounded-2xl p-8 mb-6" style={{ background: 'linear-gradient(135deg, #0B3C5D 0%, #1D4ED8 100%)', boxShadow: '0 8px 32px rgba(11,60,93,0.3)' }}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+              <BookOpen size={28} color="#fff" strokeWidth={1.8} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Summary History</h1>
+              <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>Signed in as <span style={{ color: '#fff', fontWeight: 700 }}>{currentUser?.email}</span></p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="px-5 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+              <span className="text-2xl font-bold text-white">{history.length}</span>
+              <span className="text-sm ml-2" style={{ color: 'rgba(255,255,255,0.75)' }}>{history.length === 1 ? 'Summary' : 'Summaries'}</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '2px solid #fed7aa' }}>
+      <div className="rounded-2xl p-6" style={{ background: '#ffffff', border: '1px solid #E5E7EB', boxShadow: '0 4px 16px rgba(11,60,93,0.06)' }}>
         <HistoryList
           items={history}
           onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }}
@@ -520,21 +551,41 @@ const App: React.FC = () => {
 
   const renderAbout = () => (
     <div className="max-w-4xl mx-auto space-y-12 py-10">
-      <div className="text-center space-y-5">
-        <h2 className="text-5xl md:text-6xl font-extrabold gradient-text tracking-tight">{APP_NAME}</h2>
-        <p className="text-lg text-orange-400 font-semibold uppercase tracking-wider">AI Document Intelligence</p>
+      <div className="text-center space-y-4 pb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'rgba(11,60,93,0.07)', border: '1px solid rgba(11,60,93,0.2)', color: '#0B3C5D' }}>
+          <Sparkles size={12} /> Platform Overview
+        </div>
+        <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight gradient-text">{APP_NAME}</h2>
+        <p className="text-base font-bold uppercase tracking-wider" style={{ color: '#1D4ED8' }}>Intelligent Book Summarization Platform</p>
       </div>
-      <div className="card-premium p-10 md:p-12 rounded-2xl space-y-8">
-        <p className="text-zinc-300 text-xl font-normal leading-relaxed">Transform your documents into <span className="text-white font-bold gradient-text">actionable insights</span> using cutting-edge AI technology.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-zinc-800 pt-8">
-          <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
-            <h4 className="text-white font-bold text-lg mb-3 flex items-center gap-2.5"><FileText className="text-orange-400" size={22} /> Multi-Format Support</h4>
-            <p className="text-zinc-400 text-sm leading-relaxed">Process PDF, DOCX, and TXT files with intelligent text extraction and formatting.</p>
-          </div>
-          <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
-            <h4 className="text-white font-bold text-lg mb-3 flex items-center gap-2.5"><Sparkles className="text-orange-400" size={22} /> BERT AI Model</h4>
-            <p className="text-zinc-400 text-sm leading-relaxed">Powered by state-of-the-art transformers for precise extractive summarization.</p>
-          </div>
+
+      <div className="card-premium rounded-2xl" style={{ padding: '36px 40px' }}>
+        <p className="text-lg font-normal leading-relaxed mb-8" style={{ color: '#57534e' }}>Transform your documents into <span className="font-bold" style={{ color: '#0B3C5D' }}>actionable insights</span> using cutting-edge BERT-based NLP technology, built for researchers, students, and professionals.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6" style={{ borderTop: '1px solid #E5E7EB' }}>
+          {[
+            { icon: <FileText size={20} color="#0B3C5D" />, color: '#0B3C5D', bg: 'rgba(11,60,93,0.07)', title: 'Multi-Format Support', desc: 'Process PDF, DOCX, TXT and web article URLs with intelligent extraction.' },
+            { icon: <Sparkles size={20} color="#1D4ED8" />, color: '#1D4ED8', bg: 'rgba(29,78,216,0.07)', title: 'BERT Transformer Model', desc: 'State-of-the-art extractive summarization using transformer neural networks.' },
+            { icon: <BookOpen size={20} color="#15803D" />, color: '#15803D', bg: 'rgba(21,128,61,0.07)', title: 'Key Insight Extraction', desc: 'Automatically identifies and extracts the most important bullet points.' },
+            { icon: <Send size={20} color="#0284c7" />, color: '#0284c7', bg: 'rgba(14,165,233,0.07)', title: 'Cloud Persistence', desc: 'All summaries stored in MongoDB, accessible from any device, any time.' },
+          ].map(({ icon, color, bg, title, desc }) => (
+            <div key={title} className="p-5 rounded-xl transition-all card-hover" style={{ background: bg, border: `1px solid ${color}25` }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 rounded-xl" style={{ background: '#ffffff', boxShadow: `0 2px 8px ${color}22` }}>{icon}</div>
+                <h4 className="font-bold" style={{ color: '#0B3C5D' }}>{title}</h4>
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#6b7280' }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tech Stack */}
+      <div className="rounded-xl p-5" style={{ background: 'rgba(11,60,93,0.04)', border: '1px solid #E5E7EB' }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#0B3C5D' }}>Technology Stack</p>
+        <div className="flex flex-wrap gap-2">
+          {['React 18', 'TypeScript', 'FastAPI', 'Python', 'BERT / HuggingFace', 'MongoDB', 'Tailwind CSS', 'JWT Auth', 'Render Cloud'].map(t => (
+            <span key={t} className="badge badge-navy">{t}</span>
+          ))}
         </div>
       </div>
     </div>
@@ -615,7 +666,7 @@ const App: React.FC = () => {
       {!isAuthenticated ? (
         <Auth onLogin={handleLogin} />
       ) : (
-        <div className="flex text-slate-100 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+        <div className="flex text-slate-800 min-h-screen" style={{ background: 'var(--bg-base)' }}>
           <Sidebar 
             currentPage={currentPage} 
             onPageChange={(p) => { setCurrentPage(p); setActiveSummary(null); }}
@@ -623,26 +674,26 @@ const App: React.FC = () => {
             onLogout={handleLogout}
           />
           <main
-            className="flex-1 md:ml-64 p-8 md:p-16 pb-32 md:pb-16 min-h-screen"
-            style={currentPage === Page.HISTORY ? { backgroundColor: '#fff7ed' } : {}}
+            className="flex-1 md:ml-64 p-6 md:p-12 pb-32 md:pb-12 min-h-screen"
           >
             {/* Mobile user header */}
             {currentUser && (
-              <div className="md:hidden mb-6 bg-zinc-900/60 rounded-xl p-4 border border-zinc-800 flex items-center justify-between">
+              <div className="md:hidden mb-6 rounded-xl p-4 flex items-center justify-between" style={{ background: '#ffffff', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(11,60,93,0.08)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                    <UserIcon size={20} className="text-white" />
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white" style={{ background: 'linear-gradient(135deg, #1D4ED8, #0B3C5D)', boxShadow: '0 2px 8px rgba(11,60,93,0.3)' }}>
+                    {currentUser.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{currentUser.name}</p>
-                    <p className="text-zinc-500 text-xs truncate">{currentUser.email}</p>
+                    <p className="text-sm font-bold truncate" style={{ color: '#0B3C5D' }}>{currentUser.name}</p>
+                    <p className="text-xs truncate" style={{ color: '#9ca3af' }}>{currentUser.email}</p>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-all text-sm font-semibold"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-semibold"
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}
                 >
-                  <LogOut size={16} />
+                  <LogOut size={15} />
                 </button>
               </div>
             )}
@@ -651,12 +702,13 @@ const App: React.FC = () => {
             {currentPage === Page.USERS && renderUsers()}
             {currentPage === Page.ABOUT && renderAbout()}
           </main>
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-zinc-800 flex justify-around p-4 z-50">
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 flex justify-around p-4 z-50" style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderTop: '1.5px solid #E5E7EB', boxShadow: '0 -4px 20px rgba(11,60,93,0.08)' }}>
             {(currentUser?.role === 'admin' ? ADMIN_NAV_ITEMS : NAV_ITEMS).map(item => (
               <button 
                 key={item.id} 
                 onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 
-                className={`p-3 rounded-lg transition-all ${currentPage === item.id ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-500 hover:text-zinc-300'}`}
+                className="p-3 rounded-xl transition-all"
+                style={currentPage === item.id ? { color: '#1D4ED8', background: 'rgba(29,78,216,0.1)', border: '1px solid rgba(29,78,216,0.25)' } : { color: '#9CA3AF', border: '1px solid transparent' }}
               >
                 {item.icon}
               </button>

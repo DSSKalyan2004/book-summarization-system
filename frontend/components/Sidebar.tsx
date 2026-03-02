@@ -2,7 +2,7 @@
 import React from 'react';
 import { NAV_ITEMS, ADMIN_NAV_ITEMS, APP_NAME } from '../constants';
 import { Page, User } from '../types';
-import { Zap, LogOut, User as UserIcon } from 'lucide-react';
+import { BookOpen, LogOut, ChevronRight, Cpu } from 'lucide-react';
 
 interface SidebarProps {
   currentPage: Page;
@@ -13,69 +13,124 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, currentUser, onLogout }) => {
   const navItems = currentUser?.role === 'admin' ? ADMIN_NAV_ITEMS : NAV_ITEMS;
-  
+
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 glass border-r border-zinc-800 hidden md:flex flex-col z-50">
-      <div className="p-8">
-        <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-          <div className="btn-primary p-1.5 rounded-lg">
-            <Zap size={18} className="fill-white text-white" strokeWidth={2.5} />
+    <aside className="fixed left-0 top-0 h-screen w-64 hidden md:flex flex-col z-50"
+      style={{
+        background: '#0B3C5D',
+        borderRight: 'none',
+        boxShadow: '4px 0 20px rgba(11,60,93,0.25)',
+      }}
+    >
+      {/* Logo Block */}
+      <div className="px-5 pt-7 pb-5">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="relative flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
+              <BookOpen size={19} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white"></div>
           </div>
-          <span className="gradient-text">{APP_NAME}</span>
-        </h1>
-        <p className="text-zinc-500 text-[0.65rem] mt-2.5 font-semibold uppercase tracking-widest">Intelligence</p>
+          <div>
+            <h1 className="text-base font-extrabold tracking-tight leading-none" style={{ color: '#ffffff' }}>{APP_NAME}</h1>
+            <p className="text-[10px] font-bold mt-0.5 uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.55)' }}>Book Intelligence</p>
+          </div>
+        </div>
+        <div className="mt-5 h-px w-full" style={{ background: 'rgba(255,255,255,0.12)' }}></div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1.5">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onPageChange(item.id as Page)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative ${
-              currentPage === item.id 
-                ? 'btn-primary text-white' 
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-            }`}
-          >
-            <span className="relative z-10">
-              {item.icon}
-            </span>
-            <span className="relative z-10 font-semibold text-sm">{item.label}</span>
-          </button>
-        ))}
+      {/* Nav Section Label */}
+      <div className="px-5 mb-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Navigation</p>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 space-y-1">
+        {navItems.map((item) => {
+          const isActive = currentPage === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onPageChange(item.id as Page)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all relative group"
+              style={isActive ? {
+                background: 'rgba(255,255,255,0.15)',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              } : {
+                color: 'rgba(255,255,255,0.65)',
+                border: '1px solid transparent',
+              }}
+            >
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r-full"
+                  style={{ background: '#15803D' }}></div>
+              )}
+              <span style={{ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.55)' }}>{item.icon}</span>
+              <span className="flex-1 text-left" style={{ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.7)' }}>{item.label}</span>
+              {isActive && <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.7)', opacity: 1 }} />}
+            </button>
+          );
+        })}
       </nav>
 
-      <div className="p-6 space-y-3">
-        {/* User Info */}
-        {currentUser && (
-          <div className="bg-zinc-900/60 rounded-xl p-4 border border-zinc-800">
+      {/* AI Badge */}
+      <div className="px-4 mb-3">
+        <div className="rounded-xl p-3 flex items-center gap-3"
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #1D4ED8, #15803D)', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+            <Cpu size={15} color="#fff" />
+          </div>
+          <div>
+            <p className="text-xs font-bold" style={{ color: '#ffffff' }}>BERT AI Engine</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>Extractive NLP · Active</p>
+          </div>
+          <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* User Card */}
+      {currentUser && (
+        <div className="px-4 pb-6">
+          <div className="rounded-xl p-4"
+            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                <UserIcon size={20} className="text-white" />
+              <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #1D4ED8, #0B3C5D)', boxShadow: '0 2px 8px rgba(11,60,93,0.4)' }}>
+                {currentUser.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-semibold truncate">{currentUser.name}</p>
-                <p className="text-zinc-500 text-xs truncate">{currentUser.email}</p>
+                <p className="text-sm font-bold truncate" style={{ color: '#ffffff' }}>{currentUser.name}</p>
+                <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>{currentUser.email}</p>
               </div>
+              {currentUser.role === 'admin' && (
+                <span className="badge badge-green text-[10px] px-1.5" style={{ background: 'rgba(21,128,61,0.25)', color: '#86efac', borderColor: 'rgba(21,128,61,0.4)' }}>Admin</span>
+              )}
             </div>
             <button
               onClick={onLogout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800/50 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-all text-sm font-semibold border border-zinc-700/50 hover:border-red-500/30"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(220,38,38,0.25)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.5)';
+                (e.currentTarget as HTMLButtonElement).style.color = '#fca5a5';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.75)';
+              }}
             >
-              <LogOut size={16} />
-              <span>Logout</span>
+              <LogOut size={15} />
+              <span>Sign Out</span>
             </button>
           </div>
-        )}
-        
-        {/* System Status */}
-        <div className="bg-zinc-900/60 rounded-xl p-4 border border-zinc-800">
-          <div className="flex items-center gap-2.5">
-            <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
-            <p className="text-[0.65rem] text-zinc-400 font-semibold uppercase tracking-wider">System Ready</p>
-          </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 };
