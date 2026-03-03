@@ -393,11 +393,11 @@ const App: React.FC = () => {
               <div className="flex gap-2">
                 <button onClick={() => copyToClipboard(fullSummaryText)}
                   className="p-3 rounded-xl transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#0B3C5D', boxShadow: '0 2px 8px rgba(11,60,93,0.06)' }}
-                  title="Copy"
+                  title="Copy" aria-label="Copy summary to clipboard"
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1D4ED8'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7EB'; }}
                 ><Copy size={19} /></button>
-                <button onClick={() => downloadSummary(activeSummary)} className="p-3 btn-primary text-white rounded-xl" title="Download"><Download size={19} /></button>
+                <button onClick={() => downloadSummary(activeSummary)} className="p-3 btn-primary text-white rounded-xl" title="Download" aria-label="Download summary"><Download size={19} /></button>
               </div>
             </div>
 
@@ -518,36 +518,68 @@ const App: React.FC = () => {
     );
   };
 
-  const renderHistory = () => (
-    <div style={{ width: '100%', minHeight: '80vh' }}>
-      <div className="rounded-2xl p-8 mb-6" style={{ background: 'linear-gradient(135deg, #0B3C5D 0%, #1D4ED8 100%)', boxShadow: '0 8px 32px rgba(11,60,93,0.3)' }}>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-              <BookOpen size={28} color="#fff" strokeWidth={1.8} />
+  const renderHistory = () => {
+    const totalWords = history.reduce((s, i) => s + i.wordCount, 0);
+    const totalBullets = history.reduce((s, i) => s + i.bulletPoints.length, 0);
+    const avgWords = history.length ? Math.round(totalWords / history.length) : 0;
+
+    return (
+      <div style={{ width: '100%', minHeight: '80vh' }}>
+        {/* Header banner */}
+        <div className="rounded-2xl mb-6" style={{ background: 'linear-gradient(135deg, #0B3C5D 0%, #1D4ED8 100%)', boxShadow: '0 8px 32px rgba(11,60,93,0.3)', overflow: 'hidden', position: 'relative' }}>
+          {/* Background blobs */}
+          <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '280px', height: '280px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-40px', left: '30%', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(21,128,61,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+          <div style={{ padding: '32px 36px', position: 'relative', zIndex: 1 }}>
+            {/* Top row */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 mb-8">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+                  <BookOpen size={26} color="#fff" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '99px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', marginBottom: '6px' }}>
+                    <Sparkles size={10} color="rgba(255,255,255,0.9)" />
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Document Library</span>
+                  </div>
+                  <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>Summary History</h1>
+                  <p style={{ fontSize: '13px', margin: '4px 0 0 0', color: 'rgba(255,255,255,0.65)' }}>
+                    Signed in as <span style={{ color: '#fff', fontWeight: 700 }}>{currentUser?.email}</span>
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Summary History</h1>
-              <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>Signed in as <span style={{ color: '#fff', fontWeight: 700 }}>{currentUser?.email}</span></p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="px-5 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-              <span className="text-2xl font-bold text-white">{history.length}</span>
-              <span className="text-sm ml-2" style={{ color: 'rgba(255,255,255,0.75)' }}>{history.length === 1 ? 'Summary' : 'Summaries'}</span>
+
+            {/* Stats row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+              {[
+                { label: 'Documents',  value: history.length,            color: '#fff',    sub: 'total summaries' },
+                { label: 'Total Words', value: totalWords.toLocaleString(), color: '#93c5fd', sub: 'across all docs' },
+                { label: 'Key Points', value: totalBullets,              color: '#6ee7b7', sub: 'insights extracted' },
+                { label: 'Avg. Length', value: avgWords.toLocaleString() + ' w', color: '#fde68a', sub: 'per document' },
+              ].map(({ label, value, color, sub }) => (
+                <div key={label} style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', backdropFilter: 'blur(8px)' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.6)', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+                  <p style={{ fontSize: '20px', fontWeight: 800, color, margin: '0 0 2px 0', lineHeight: 1 }}>{value}</p>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{sub}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* List panel */}
+        <div className="rounded-2xl p-6" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', boxShadow: '0 4px 16px rgba(11,60,93,0.06)' }}>
+          <HistoryList
+            items={history}
+            onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }}
+            onDelete={deleteFromHistory}
+          />
+        </div>
       </div>
-      <div className="rounded-2xl p-6" style={{ background: '#ffffff', border: '1px solid #E5E7EB', boxShadow: '0 4px 16px rgba(11,60,93,0.06)' }}>
-        <HistoryList
-          items={history}
-          onSelect={(item) => { setActiveSummary(item); setCurrentPage(Page.UPLOAD); }}
-          onDelete={deleteFromHistory}
-        />
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderAbout = () => (
     <div className="max-w-4xl mx-auto space-y-12 py-10">
@@ -579,15 +611,6 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Tech Stack */}
-      <div className="rounded-xl p-5" style={{ background: 'rgba(11,60,93,0.04)', border: '1px solid #E5E7EB' }}>
-        <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#0B3C5D' }}>Technology Stack</p>
-        <div className="flex flex-wrap gap-2">
-          {['React 18', 'TypeScript', 'FastAPI', 'Python', 'BERT / HuggingFace', 'MongoDB', 'Tailwind CSS', 'JWT Auth', 'Render Cloud'].map(t => (
-            <span key={t} className="badge badge-navy">{t}</span>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -690,6 +713,7 @@ const App: React.FC = () => {
                 </div>
                 <button
                   onClick={handleLogout}
+                  aria-label="Log out"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-semibold"
                   style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}
                 >
@@ -707,6 +731,7 @@ const App: React.FC = () => {
               <button 
                 key={item.id} 
                 onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 
+                aria-label={item.label}
                 className="p-3 rounded-xl transition-all"
                 style={currentPage === item.id ? { color: '#1D4ED8', background: 'rgba(29,78,216,0.1)', border: '1px solid rgba(29,78,216,0.25)' } : { color: '#9CA3AF', border: '1px solid transparent' }}
               >

@@ -2,7 +2,7 @@
 import { BookMetadata, SummaryResult } from "../types";
 
 env.allowLocalModels = false;
-env.useBrowserCache = true;
+env.useBrowserCache = false;
 
 let bertModel: any = null;
 
@@ -257,7 +257,9 @@ export async function generateBookSummary(
     console.log(`✅ Done in ${processingTime.toFixed(1)}s — ${bulletPoints.length} bullets`);
 
     return {
-      id: crypto.randomUUID(),
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`,
       metadata,
       fullText: text,
       summaryParagraphs: [para1, para2].filter(Boolean),

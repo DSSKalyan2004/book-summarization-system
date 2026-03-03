@@ -2,7 +2,7 @@
 import React from 'react';
 import { NAV_ITEMS, ADMIN_NAV_ITEMS, APP_NAME } from '../constants';
 import { Page, User } from '../types';
-import { BookOpen, LogOut, ChevronRight, Cpu } from 'lucide-react';
+import { BookOpen, LogOut, ChevronRight } from 'lucide-react';
 
 interface SidebarProps {
   currentPage: Page;
@@ -77,20 +77,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, currentUse
       </nav>
 
       {/* AI Badge */}
-      <div className="px-4 mb-3">
-        <div className="rounded-xl p-3 flex items-center gap-3"
-          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #1D4ED8, #15803D)', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
-            <Cpu size={15} color="#fff" />
-          </div>
-          <div>
-            <p className="text-xs font-bold" style={{ color: '#ffffff' }}>BERT AI Engine</p>
-            <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>Extractive NLP · Active</p>
-          </div>
-          <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-        </div>
-      </div>
 
       {/* User Card */}
       {currentUser && (

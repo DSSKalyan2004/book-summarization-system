@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
 /* ============================================================
    DESIGN TOKENS — Intelligent Book Summarization Platform
    Professional Navy · Blue · Green · White UI
@@ -54,7 +58,8 @@ body, html, #root {
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-::selection { background: rgba(29,78,216,0.15); color: var(--navy); }
+::selection { background: rgba(29,78,216,0.75); color: #ffffff; }
+::-moz-selection { background: rgba(29,78,216,0.75); color: #ffffff; }
 
 *:focus-visible { outline: 2px solid rgba(29,78,216,0.5); outline-offset: 2px; border-radius: 6px; }
 

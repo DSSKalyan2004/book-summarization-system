@@ -3,8 +3,95 @@ import { User, LoginEvent } from '../types';
 import { authApi } from '../services/api';
 import {
   Users, Shield, Calendar, Mail, Loader2, AlertCircle, Copy,
-  CheckCircle2, UserPlus, Search, Clock, RefreshCw, LogIn, Activity
+  CheckCircle2, UserPlus, Search, Clock, RefreshCw, LogIn, Activity,
+  MapPin, MonitorSmartphone
 } from 'lucide-react';
+
+/* ─── Design tokens ─────────────────────────────────────── */
+const P        = '#6366F1';
+const P_LIGHT  = 'rgba(99,102,241,0.08)';
+const P_BORDER = 'rgba(99,102,241,0.18)';
+const SURFACE  = '#ffffff';
+const BORDER   = '#E8EAF0';
+const TEXT     = '#111827';
+const TEXT_SUB = '#6B7280';
+const TEXT_MUTED = '#9CA3AF';
+
+/* ─── Avatar palette ────────────────────────────────────── */
+const AVATAR_COLORS = [
+  { bg: '#EDE9FE', color: '#7C3AED' },
+  { bg: '#DBEAFE', color: '#2563EB' },
+  { bg: '#D1FAE5', color: '#059669' },
+  { bg: '#FCE7F3', color: '#DB2777' },
+  { bg: '#FEF3C7', color: '#D97706' },
+  { bg: '#E0F2FE', color: '#0284C7' },
+];
+function getAvatarStyle(name: string) {
+  return AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+}
+
+/* ─── Tooltip Avatar ────────────────────────────────────── */
+const AvatarWithTooltip: React.FC<{ name: string; size?: number }> = ({ name, size = 34 }) => {
+  const [show, setShow] = useState(false);
+  const { bg, color } = getAvatarStyle(name);
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <div style={{
+        width: size, height: size, borderRadius: '50%', background: bg, color,
+        fontWeight: 700, fontSize: Math.round(size * 0.38),
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: `2px solid ${SURFACE}`, boxShadow: '0 1px 4px rgba(0,0,0,0.09)',
+        flexShrink: 0, cursor: 'default', userSelect: 'none',
+      }}>
+        {name.charAt(0).toUpperCase()}
+      </div>
+      {show && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 7px)', left: '50%', transform: 'translateX(-50%)',
+          background: '#111827', color: '#fff', fontSize: '12px', fontWeight: 600,
+          padding: '5px 10px', borderRadius: '8px', whiteSpace: 'nowrap', zIndex: 200,
+          boxShadow: '0 4px 14px rgba(0,0,0,0.18)', pointerEvents: 'none',
+        }}>
+          {name}
+          <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #111827' }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─── Pill badge ────────────────────────────────────────── */
+const Pill: React.FC<{ color: string; bg: string; border: string; children: React.ReactNode }> = ({ color, bg, border, children }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', background: bg, border: `1px solid ${border}`, borderRadius: '99px', color, fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+    {children}
+  </span>
+);
+
+/* ─── Search input ──────────────────────────────────────── */
+const SearchInput: React.FC<{ value: string; onChange: (v: string) => void; placeholder: string }> = ({ value, onChange, placeholder }) => (
+  <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+    <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: TEXT_MUTED, pointerEvents: 'none' }} />
+    <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      style={{ width: '100%', padding: '9px 14px 9px 34px', background: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: '10px', fontSize: '14px', color: TEXT, fontWeight: 500, outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
+      onFocus={e => { e.target.style.borderColor = P; e.target.style.boxShadow = 'rgba(99,102,241,0.12) 0 0 0 3px'; }}
+      onBlur={e => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none'; }}
+    />
+  </div>
+);
+
+/* ─── Stat card ─────────────────────────────────────────── */
+const StatCard: React.FC<{ label: string; value: number | string; icon: React.ReactNode; accent: string; iconColor: string }> = ({ label, value, icon, accent, iconColor }) => (
+  <div style={{ background: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s' }}>
+    <div style={{ width: '42px', height: '42px', borderRadius: '11px', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: iconColor }}>
+      {icon}
+    </div>
+    <div>
+      <p style={{ fontSize: '22px', fontWeight: 800, color: TEXT, margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: '12px', color: TEXT_SUB, margin: '4px 0 0 0', fontWeight: 600 }}>{label}</p>
+    </div>
+  </div>
+);
 
 const UsersList: React.FC = () => {
   const [tab, setTab] = useState<'users' | 'history'>('users');
@@ -123,230 +210,275 @@ const UsersList: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-      {/* Header */}
-      <header className="p-6 rounded-2xl" style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(51,65,85,0.5)' }}>
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.08))', border: '1px solid rgba(99,102,241,0.25)' }}>
-              <UserPlus color="#818cf8" size={24} />
+      {/* ── Header ── */}
+      <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px 28px', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 12px rgba(11,60,93,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '13px', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(99,102,241,0.35)' }}>
+              <UserPlus size={22} color="#fff" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Admin Panel</h2>
-              <p className="text-sm" style={{ color: '#64748b' }}>Users &amp; Login History — stored permanently in MongoDB</p>
-              {lastUpdated && (
-                <p className="text-xs mt-0.5" style={{ color: '#334155' }}>
-                  Auto-refreshes every 30s · Updated: {lastUpdated.toLocaleTimeString()}
-                </p>
-              )}
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>Admin Panel</h2>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0 0 0', fontWeight: 500 }}>Users &amp; Login History</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2.5 rounded-xl text-center" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <p className="font-bold text-xl leading-none" style={{ color: '#818cf8' }}>{users.length}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#475569' }}>Users</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ padding: '8px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(79,70,229,0.06))', border: '1.5px solid rgba(99,102,241,0.2)', textAlign: 'center' }}>
+              <p style={{ fontSize: '22px', fontWeight: 800, color: '#6366f1', margin: 0, lineHeight: 1 }}>{users.length}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', margin: '3px 0 0 0', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Users</p>
             </div>
-            <div className="px-4 py-2.5 rounded-xl text-center" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}>
-              <p className="font-bold text-xl leading-none" style={{ color: '#67e8f9' }}>{events.length || '\u2014'}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#475569' }}>Logins</p>
+            <div style={{ padding: '8px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(6,182,212,0.08), rgba(14,165,233,0.06))', border: '1.5px solid rgba(6,182,212,0.2)', textAlign: 'center' }}>
+              <p style={{ fontSize: '22px', fontWeight: 800, color: '#0891b2', margin: 0, lineHeight: 1 }}>{events.length || '—'}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', margin: '3px 0 0 0', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Logins</p>
             </div>
           </div>
         </div>
-        {/* Tabs */}
-        <div className="mt-5 flex gap-2">
-          <button
-            onClick={() => setTab('users')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all"
-            style={tab === 'users' ? { background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', boxShadow: '0 4px 14px rgba(99,102,241,0.3)', border: '1px solid rgba(99,102,241,0.4)' } : { background: 'rgba(30,41,59,0.7)', color: '#64748b', border: '1px solid rgba(51,65,85,0.5)' }}
-          >
-            <Users size={15} /> Registered Users
-          </button>
-          <button
-            onClick={() => setTab('history')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all"
-            style={tab === 'history' ? { background: 'linear-gradient(135deg, #0891b2, #0e7490)', color: '#fff', boxShadow: '0 4px 14px rgba(6,182,212,0.3)', border: '1px solid rgba(6,182,212,0.4)' } : { background: 'rgba(30,41,59,0.7)', color: '#64748b', border: '1px solid rgba(51,65,85,0.5)' }}
-          >
-            <Activity size={15} /> Login History
-          </button>
-        </div>
-      </header>
 
-      {/* â”€â”€ USERS TAB â”€â”€ */}
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '20px', padding: '5px', background: '#F3F4F6', borderRadius: '12px', width: 'fit-content', border: '1.5px solid #E5E7EB' }}>
+          {[
+            { key: 'users', label: 'Registered Users', icon: <Users size={14} />, activeGrad: 'linear-gradient(135deg, #6366f1, #4f46e5)', activeShadow: '0 2px 10px rgba(99,102,241,0.3)' },
+            { key: 'history', label: 'Login History', icon: <Activity size={14} />, activeGrad: 'linear-gradient(135deg, #0891b2, #0e7490)', activeShadow: '0 2px 10px rgba(6,182,212,0.3)' },
+          ].map(({ key, label, icon, activeGrad, activeShadow }) => (
+            <button key={key} onClick={() => setTab(key as 'users' | 'history')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '7px',
+                padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 700,
+                border: 'none', cursor: 'pointer', transition: 'all 0.18s',
+                background: tab === key ? activeGrad : 'transparent',
+                color: tab === key ? '#fff' : '#9CA3AF',
+                boxShadow: tab === key ? activeShadow : 'none',
+              }}>{icon}{label}</button>
+          ))}
+        </div>
+        {lastUpdated && (
+          <p style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '10px' }}>Auto-refreshes every 30s · Updated: {lastUpdated.toLocaleTimeString()}</p>
+        )}
+      </div>
+
+      {/* ── USERS TAB ── */}
       {tab === 'users' && (
         <>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={15} style={{ color: '#9CA3AF' }} />
+          {/* Stat cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            {[
+              { label: 'Admins', value: users.filter(u => u.role === 'admin').length, icon: <Shield size={20} color="#fff" />, bg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', shadow: '0 4px 16px rgba(139,92,246,0.35)' },
+              { label: 'Regular Users', value: users.filter(u => u.role === 'user').length, icon: <Users size={20} color="#fff" />, bg: 'linear-gradient(135deg, #6366f1, #4f46e5)', shadow: '0 4px 16px rgba(99,102,241,0.35)' },
+              { label: 'Active', value: users.filter(u => u.isActive).length, icon: <CheckCircle2 size={20} color="#fff" />, bg: 'linear-gradient(135deg, #10b981, #059669)', shadow: '0 4px 16px rgba(16,185,129,0.35)' },
+            ].map(({ label, value, icon, bg, shadow }) => (
+              <div key={label} style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', borderRadius: '14px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: shadow }}>
+                  {icon}
+                </div>
+                <div>
+                  <p style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1, letterSpacing: '-0.02em' }}>{value}</p>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', fontWeight: 600 }}>{label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Toolbar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }} />
               <input type="text" placeholder="Search by name, email or role…" value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg text-sm transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', outline: 'none', color: '#0B3C5D', fontWeight: 500 }}
-                onMouseEnter={e => { (e.target as HTMLInputElement).style.background = '#0B3C5D'; (e.target as HTMLInputElement).style.color = '#ffffff'; (e.target as HTMLInputElement).style.borderColor = '#0B3C5D'; }}
-                onMouseLeave={e => { if (document.activeElement !== e.target) { (e.target as HTMLInputElement).style.background = '#ffffff'; (e.target as HTMLInputElement).style.color = '#0B3C5D'; (e.target as HTMLInputElement).style.borderColor = '#E5E7EB'; } }}
-                onFocus={e => { e.target.style.background = '#0B3C5D'; e.target.style.color = '#ffffff'; e.target.style.borderColor = '#1D4ED8'; e.target.style.boxShadow = '0 0 0 3px rgba(29,78,216,0.2)'; }}
-                onBlur={e => { e.target.style.background = '#ffffff'; e.target.style.color = '#0B3C5D'; e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; }} />
+                style={{ width: '100%', padding: '10px 14px 10px 36px', background: '#ffffff', border: '1.5px solid #E5E7EB', borderRadius: '10px', fontSize: '13px', color: '#0f172a', fontWeight: 500, outline: 'none', boxSizing: 'border-box', transition: 'all 0.18s' }}
+                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.12)'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; }} />
             </div>
-            <button onClick={loadUsers} disabled={loadingUsers} className="p-2.5 rounded-lg transition-all disabled:opacity-50" style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(51,65,85,0.5)', color: '#64748b' }} title="Refresh">
+            <button onClick={loadUsers} disabled={loadingUsers} title="Refresh"
+              style={{ padding: '10px', borderRadius: '10px', background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#64748b', cursor: loadingUsers ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: loadingUsers ? 0.5 : 1, transition: 'all 0.18s' }}>
               <RefreshCw size={15} className={loadingUsers ? 'animate-spin' : ''} />
             </button>
-            <button onClick={copyAllEmails} className="px-4 py-2.5 text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition-all" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 12px rgba(99,102,241,0.3)', border: '1px solid rgba(99,102,241,0.4)' }}>
-              {emailCopied ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+            <button onClick={copyAllEmails}
+              style={{ padding: '10px 18px', borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+              {emailCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
               {emailCopied ? 'Copied!' : 'Copy All Emails'}
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-4 rounded-xl flex items-center justify-between" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
-              <div><p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#a78bfa' }}>Admins</p><p className="text-2xl font-bold mt-1" style={{ color: '#c4b5fd' }}>{users.filter(u => u.role === 'admin').length}</p></div>
-              <Shield style={{ color: 'rgba(139,92,246,0.3)' }} size={30} />
-            </div>
-            <div className="p-4 rounded-xl flex items-center justify-between" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <div><p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#818cf8' }}>Users</p><p className="text-2xl font-bold mt-1" style={{ color: '#a5b4fc' }}>{users.filter(u => u.role === 'user').length}</p></div>
-              <Users style={{ color: 'rgba(99,102,241,0.3)' }} size={30} />
-            </div>
-            <div className="p-4 rounded-xl flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <div><p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#6ee7b7' }}>Active</p><p className="text-2xl font-bold mt-1" style={{ color: '#a7f3d0' }}>{users.filter(u => u.isActive).length}</p></div>
-              <CheckCircle2 style={{ color: 'rgba(16,185,129,0.3)' }} size={30} />
-            </div>
-          </div>
-
+          {/* Table */}
           {loadingUsers ? (
-            <div className="flex items-center justify-center py-20"><div className="text-center space-y-3"><Loader2 className="animate-spin mx-auto" size={40} style={{ color: '#6366f1' }} /><p style={{ color: '#64748b' }}>Loading users…</p></div></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+              <div style={{ textAlign: 'center' }}><Loader2 size={36} className="animate-spin" style={{ color: '#6366f1', display: 'block', margin: '0 auto 12px' }} /><p style={{ color: '#94a3b8', fontSize: '14px' }}>Loading users…</p></div>
+            </div>
           ) : usersError ? (
-            <div className="p-5 rounded-xl flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-              <AlertCircle style={{ color: '#f87171', flexShrink: 0 }} size={22} />
-              <div className="flex-1"><p style={{ color: '#f87171', fontWeight: 600 }}>Failed to load users</p><p style={{ color: '#fca5a5', fontSize: '13px', marginTop: '2px' }}>{usersError}</p></div>
-              <button onClick={loadUsers} className="px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.2)' }}><RefreshCw size={13} />Retry</button>
+            <div style={{ padding: '20px', borderRadius: '12px', background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <AlertCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+              <p style={{ color: '#dc2626', fontWeight: 600, margin: 0 }}>{usersError}</p>
+              <button onClick={loadUsers} style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><RefreshCw size={12} />Retry</button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-2xl p-16 text-center" style={{ border: '1px solid rgba(51,65,85,0.4)' }}>
-              <Users style={{ color: '#1e293b', margin: '0 auto 16px' }} size={48} />
-              <p style={{ color: '#475569' }}>{search ? `No users match "${search}"` : 'No users registered yet'}</p>
+            <div style={{ textAlign: 'center', padding: '64px 0', background: '#ffffff', borderRadius: '16px', border: '1.5px solid #E5E7EB' }}>
+              <Users size={40} style={{ color: '#cbd5e1', margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ color: '#94a3b8', fontWeight: 600 }}>{search ? `No users match "${search}"` : 'No users registered yet'}</p>
             </div>
           ) : (
-            <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(51,65,85,0.4)' }}>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead style={{ background: 'rgba(15,23,42,0.8)', borderBottom: '1px solid rgba(51,65,85,0.4)' }}>
-                    <tr>
-                      {['#','Name','Email','Role','Registered','Last Login','Status'].map(h => (
-                        <th key={h} className="text-left p-4 font-semibold text-xs uppercase tracking-wider" style={{ color: '#475569' }}>{h}</th>
+            <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 12px rgba(11,60,93,0.06)', overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'linear-gradient(135deg, #f8faff, #f1f5f9)', borderBottom: '2px solid #E5E7EB' }}>
+                      {['#', 'User', 'Email', 'Role', 'Registered', 'Last Login', 'Status'].map(h => (
+                        <th key={h} style={{ padding: '13px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.07em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y" style={{ borderColor: 'rgba(51,65,85,0.3)' }}>
-                    {filtered.map((user, i) => (
-                      <tr key={user._id || user.id} className="transition-all" style={{ borderColor: 'rgba(51,65,85,0.3)' }} onMouseEnter={e=>(e.currentTarget as HTMLTableRowElement).style.background='rgba(15,23,42,0.5)'} onMouseLeave={e=>(e.currentTarget as HTMLTableRowElement).style.background='transparent'}>
-                        <td className="p-4 font-mono text-sm" style={{ color: '#334155' }}>{i + 1}</td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColor(user.name)} flex items-center justify-center text-white font-bold text-xs shadow shrink-0`}>{user.name.charAt(0).toUpperCase()}</div>
-                            <span className="text-white font-semibold whitespace-nowrap">{user.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-zinc-300 font-mono text-sm">{user.email}</td>
-                        <td className="p-4">
-                          {user.role === 'admin'
-                            ? <span className="badge badge-violet inline-flex items-center gap-1"><Shield size={10} />Admin</span>
-                            : <span className="badge badge-indigo">User</span>}
-                        </td>
-                        <td className="p-4 text-sm whitespace-nowrap" style={{ color: '#475569' }}>{formatDate(user.createdAt)}</td>
-                        <td className="p-4 text-sm whitespace-nowrap" style={{ color: '#475569' }}>{formatRelative(user.lastLogin)}</td>
-                        <td className="p-4">
-                          {user.isActive
-                            ? <span className="badge badge-green">Active</span>
-                            : <span className="badge badge-red">Inactive</span>}
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody>
+                    {filtered.map((user, i) => {
+                      const { bg: avBg, color: avColor } = getAvatarStyle(user.name);
+                      return (
+                        <tr key={user._id || user.id}
+                          style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.15s' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#F8FAFF'}
+                          onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#cbd5e1', fontWeight: 600 }}>{i + 1}</td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: avBg, color: avColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '15px', flexShrink: 0 }}>
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>{user.name}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#475569', fontFamily: 'monospace' }}>{user.email}</td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {user.role === 'admin'
+                              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: '#7c3aed', fontSize: '12px', fontWeight: 700 }}><Shield size={10} />Admin</span>
+                              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#4f46e5', fontSize: '12px', fontWeight: 700 }}>User</span>}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Calendar size={12} style={{ color: '#cbd5e1' }} />{formatDate(user.createdAt)}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Clock size={12} style={{ color: '#cbd5e1' }} />{formatRelative(user.lastLogin)}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {user.isActive
+                              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#059669', fontSize: '12px', fontWeight: 700 }}>● Active</span>
+                              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontSize: '12px', fontWeight: 700 }}>● Inactive</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-              {search && <div className="px-4 py-3 text-sm" style={{ borderTop: '1px solid rgba(51,65,85,0.4)', color: '#475569' }}>Showing {filtered.length} of {users.length} users</div>}
+              {search && (
+                <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9', fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>
+                  Showing {filtered.length} of {users.length} users
+                </div>
+              )}
             </div>
           )}
         </>
       )}
 
-      {/* â”€â”€ LOGIN HISTORY TAB â”€â”€ */}
+      {/* ── LOGIN HISTORY TAB ── */}
       {tab === 'history' && (
         <>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={15} style={{ color: '#9CA3AF' }} />
+          {/* Toolbar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }} />
               <input type="text" placeholder="Search by email, name or role…" value={historySearch} onChange={e => setHistorySearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg text-sm transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', outline: 'none', color: '#0B3C5D', fontWeight: 500 }}
-                onMouseEnter={e => { (e.target as HTMLInputElement).style.background = '#0B3C5D'; (e.target as HTMLInputElement).style.color = '#ffffff'; (e.target as HTMLInputElement).style.borderColor = '#0B3C5D'; }}
-                onMouseLeave={e => { if (document.activeElement !== e.target) { (e.target as HTMLInputElement).style.background = '#ffffff'; (e.target as HTMLInputElement).style.color = '#0B3C5D'; (e.target as HTMLInputElement).style.borderColor = '#E5E7EB'; } }}
-                onFocus={e => { e.target.style.background = '#0B3C5D'; e.target.style.color = '#ffffff'; e.target.style.borderColor = '#1D4ED8'; e.target.style.boxShadow = '0 0 0 3px rgba(29,78,216,0.2)'; }}
-                onBlur={e => { e.target.style.background = '#ffffff'; e.target.style.color = '#0B3C5D'; e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; }} />
+                style={{ width: '100%', padding: '10px 14px 10px 36px', background: '#ffffff', border: '1.5px solid #E5E7EB', borderRadius: '10px', fontSize: '13px', color: '#0f172a', fontWeight: 500, outline: 'none', boxSizing: 'border-box', transition: 'all 0.18s' }}
+                onFocus={e => { e.target.style.borderColor = '#0891b2'; e.target.style.boxShadow = '0 0 0 3px rgba(6,182,212,0.12)'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; }} />
             </div>
-            <button onClick={() => { setHistoryLoaded(false); loadHistory(); }} disabled={loadingHistory}
-              className="p-2.5 rounded-lg transition-all disabled:opacity-50" style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(51,65,85,0.5)', color: '#64748b' }} title="Refresh">
+            <button onClick={() => { setHistoryLoaded(false); loadHistory(); }} disabled={loadingHistory} title="Refresh"
+              style={{ padding: '10px', borderRadius: '10px', background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#64748b', cursor: loadingHistory ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: loadingHistory ? 0.5 : 1 }}>
               <RefreshCw size={15} className={loadingHistory ? 'animate-spin' : ''} />
             </button>
-            <div className="px-4 py-2.5 rounded-xl" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}>
-              <span className="font-bold" style={{ color: '#67e8f9' }}>{events.length}</span>
-              <span className="text-sm ml-1.5" style={{ color: '#475569' }}>total login events</span>
+            <div style={{ padding: '9px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(6,182,212,0.08), rgba(14,165,233,0.06))', border: '1.5px solid rgba(6,182,212,0.2)' }}>
+              <span style={{ fontWeight: 800, color: '#0891b2', fontSize: '15px' }}>{events.length}</span>
+              <span style={{ color: '#94a3b8', fontSize: '13px', marginLeft: '6px', fontWeight: 500 }}>total login events</span>
             </div>
           </div>
 
           {loadingHistory ? (
-            <div className="flex items-center justify-center py-20"><div className="text-center space-y-3"><Loader2 className="animate-spin mx-auto" size={40} style={{ color: '#06b6d4' }} /><p style={{ color: '#64748b' }}>Loading login history…</p></div></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+              <div style={{ textAlign: 'center' }}><Loader2 size={36} className="animate-spin" style={{ color: '#0891b2', display: 'block', margin: '0 auto 12px' }} /><p style={{ color: '#94a3b8', fontSize: '14px' }}>Loading login history…</p></div>
+            </div>
           ) : historyError ? (
-            <div className="p-5 rounded-xl flex items-center gap-4" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-              <AlertCircle style={{ color: '#f87171', flexShrink: 0 }} size={22} />
-              <div className="flex-1"><p style={{ color: '#f87171', fontWeight: 600 }}>Failed to load history</p><p style={{ color: '#fca5a5', fontSize: '13px', marginTop: '2px' }}>{historyError}</p></div>
-              <button onClick={loadHistory} className="px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.2)' }}><RefreshCw size={13} />Retry</button>
+            <div style={{ padding: '20px', borderRadius: '12px', background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <AlertCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+              <p style={{ color: '#dc2626', fontWeight: 600, margin: 0 }}>{historyError}</p>
+              <button onClick={loadHistory} style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><RefreshCw size={12} />Retry</button>
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="rounded-2xl p-16 text-center" style={{ border: '1px solid rgba(51,65,85,0.4)' }}>
-              <LogIn style={{ color: '#1e293b', margin: '0 auto 16px' }} size={48} />
-              <p style={{ color: '#475569' }}>{historySearch ? `No logins match "${historySearch}"` : 'No login events recorded yet'}</p>
-              <p style={{ color: '#334155', fontSize: '13px', marginTop: '8px' }}>Every login will appear here permanently</p>
+            <div style={{ textAlign: 'center', padding: '64px 0', background: '#ffffff', borderRadius: '16px', border: '1.5px solid #E5E7EB' }}>
+              <LogIn size={40} style={{ color: '#cbd5e1', margin: '0 auto 12px', display: 'block' }} />
+              <p style={{ color: '#94a3b8', fontWeight: 600 }}>{historySearch ? `No logins match "${historySearch}"` : 'No login events recorded yet'}</p>
+              <p style={{ color: '#cbd5e1', fontSize: '13px', marginTop: '6px' }}>Every login will appear here permanently</p>
             </div>
           ) : (
-            <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(51,65,85,0.4)' }}>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead style={{ background: 'rgba(15,23,42,0.8)', borderBottom: '1px solid rgba(51,65,85,0.4)' }}>
-                    <tr>
-                      {['#','User','Email','Role','IP Address','Device','Login Time','When'].map(h => (
-                        <th key={h} className="text-left p-4 font-semibold text-xs uppercase tracking-wider" style={{ color: '#475569' }}>{h}</th>
+            <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 12px rgba(11,60,93,0.06)', overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'linear-gradient(135deg, #f0fdff, #ecfeff)', borderBottom: '2px solid #E5E7EB' }}>
+                      {['#', 'User', 'Email', 'Role', 'IP Address', 'Device', 'Login Time', 'When'].map(h => (
+                        <th key={h} style={{ padding: '13px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.07em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y" style={{ borderColor: 'rgba(51,65,85,0.3)' }}>
-                    {filteredEvents.map((event, i) => (
-                      <tr key={`${event.email}-${event.timestamp}-${i}`} className="transition-all" onMouseEnter={e=>(e.currentTarget as HTMLTableRowElement).style.background='rgba(15,23,42,0.5)'} onMouseLeave={e=>(e.currentTarget as HTMLTableRowElement).style.background='transparent'}>
-                        <td className="p-4 font-mono text-sm" style={{ color: '#334155' }}>{i + 1}</td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColor(event.name || event.email)} flex items-center justify-center text-white font-bold text-xs shadow shrink-0`}>{(event.name || event.email).charAt(0).toUpperCase()}</div>
-                            <span className="text-white font-semibold whitespace-nowrap">{event.name || 'â€”'}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-zinc-300 font-mono text-sm">{event.email}</td>
-                        <td className="p-4">
-                          {event.role === 'admin'
-                            ? <span className="badge badge-violet inline-flex items-center gap-1"><Shield size={10} />Admin</span>
-                            : <span className="badge badge-indigo">User</span>}
-                        </td>
-                        <td className="p-4 font-mono text-xs whitespace-nowrap" style={{ color: '#475569' }}>{event.ip || '—'}</td>
-                        <td className="p-4 text-zinc-400 text-xs whitespace-nowrap">
-                          {event.userAgent
-                            ? event.userAgent.includes('Mobile') ? '📱 Mobile'
-                              : event.userAgent.includes('Tablet') ? '📟 Tablet'
-                              : '💻 Desktop'
-                            : '—'}
-                        </td>
-                        <td className="p-4 text-sm whitespace-nowrap" style={{ color: '#94a3b8' }}>{formatDateTime(event.timestamp)}</td>
-                        <td className="p-4 text-sm whitespace-nowrap" style={{ color: '#475569' }}>{formatRelative(event.timestamp)}</td>
-                      </tr>
-                    ))}
+                  <tbody>
+                    {filteredEvents.map((event, i) => {
+                      const { bg: avBg, color: avColor } = getAvatarStyle(event.name || event.email);
+                      return (
+                        <tr key={`${event.email}-${event.timestamp}-${i}`}
+                          style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.15s' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#F0FDFF'}
+                          onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#cbd5e1', fontWeight: 600 }}>{i + 1}</td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: avBg, color: avColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '15px', flexShrink: 0 }}>
+                                {(event.name || event.email).charAt(0).toUpperCase()}
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>{event.name || '—'}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#475569', fontFamily: 'monospace' }}>{event.email}</td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {event.role === 'admin'
+                              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: '#7c3aed', fontSize: '12px', fontWeight: 700 }}><Shield size={10} />Admin</span>
+                              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.25)', color: '#0891b2', fontSize: '12px', fontWeight: 700 }}>User</span>}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12px', color: '#64748b', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                            {event.ip ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} style={{ color: '#cbd5e1' }} />{event.ip}</span> : '—'}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <MonitorSmartphone size={13} style={{ color: '#cbd5e1' }} />
+                              {event.userAgent
+                                ? event.userAgent.includes('Mobile') ? 'Mobile'
+                                  : event.userAgent.includes('Tablet') ? 'Tablet'
+                                  : 'Desktop'
+                                : '—'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Clock size={11} style={{ color: '#cbd5e1' }} />{formatDateTime(event.timestamp)}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '99px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: '#0891b2', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}>{formatRelative(event.timestamp)}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-              {historySearch && <div className="px-4 py-3 text-sm" style={{ borderTop: '1px solid rgba(51,65,85,0.4)', color: '#475569' }}>Showing {filteredEvents.length} of {events.length} events</div>}
+              {historySearch && (
+                <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9', fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>
+                  Showing {filteredEvents.length} of {events.length} events
+                </div>
+              )}
             </div>
           )}
         </>
@@ -356,4 +488,3 @@ const UsersList: React.FC = () => {
 };
 
 export default UsersList;
-

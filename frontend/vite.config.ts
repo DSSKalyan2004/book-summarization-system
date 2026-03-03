@@ -19,5 +19,25 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+
+    build: {
+      target: 'es2020',
+      minify: 'esbuild',
+      cssMinify: true,
+      sourcemap: false,
+      chunkSizeWarningLimit: 1500,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            'icons': ['lucide-react'],
+          },
+        },
+      },
+    },
+
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'lucide-react'],
+    },
   };
 });

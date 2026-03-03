@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import {
-  BookOpen, Mail, Lock, User, LogIn, UserPlus, Sparkles,
+  BookOpen, Mail, Lock, User, LogIn, UserPlus,
   AlertCircle, Loader2, CheckCircle2, Shield, X, Cpu, Zap, Brain, Database
 } from 'lucide-react';
 import { APP_NAME } from '../constants';
@@ -12,13 +12,6 @@ interface AuthProps {
 interface FormData {
   name: string; email: string; password: string; confirmPassword: string;
 }
-
-const FEATURES = [
-  { icon: Brain,    color: '#0B3C5D', bg: 'rgba(11,60,93,0.08)',   title: 'BERT Transformer AI',    desc: 'State-of-the-art extractive summarization using BERT neural networks.' },
-  { icon: Cpu,      color: '#1D4ED8', bg: 'rgba(29,78,216,0.07)',  title: 'Multi-Format Support',   desc: 'Process PDF, DOCX, TXT and web URLs with intelligent extraction.' },
-  { icon: Database, color: '#15803D', bg: 'rgba(21,128,61,0.07)',  title: 'Persistent History',     desc: 'All summaries stored in MongoDB — access anywhere, anytime.' },
-  { icon: Zap,      color: '#0284c7', bg: 'rgba(14,165,233,0.07)', title: 'Real-time Processing',   desc: 'Get key insights and bullet points in seconds, not minutes.' },
-];
 
 const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -110,55 +103,93 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     <div style={{ minHeight: '100vh', display: 'flex', background: '#F3F4F6' }}>
 
       {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col" style={{
-        background: 'linear-gradient(145deg, #0B3C5D 0%, #0d4a72 50%, #1D4ED8 100%)',
-        borderRight: 'none',
-        padding: '60px 64px', position: 'relative', overflow: 'hidden',
+      <div className="hidden lg:flex lg:w-1/2 xl:w-[52%] flex-col" style={{
+        background: '#0a1628',
+        padding: '56px 60px',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', top: '-100px', left: '-60px', width: '480px', height: '480px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(29,78,216,0.25) 0%, transparent 70%)', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-80px', right: '-60px', width: '380px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(21,128,61,0.15) 0%, transparent 70%)', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', top: '45%', left: '55%', width: '280px', height: '280px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)', pointerEvents: 'none', transform: 'translate(-50%,-50%)' }}></div>
+        {/* Subtle geometric accent */}
+        <div style={{ position: 'absolute', top: 0, right: 0, width: '320px', height: '320px', background: 'radial-gradient(ellipse at top right, rgba(29,78,216,0.18) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: '260px', height: '260px', background: 'radial-gradient(ellipse at bottom left, rgba(11,60,93,0.35) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        {/* Thin vertical accent line */}
+        <div style={{ position: 'absolute', top: '15%', right: '60px', width: '1px', height: '70%', background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent)', pointerEvents: 'none' }} />
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '64px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', backdropFilter: 'blur(8px)' }}>
-            <BookOpen size={24} color="white" strokeWidth={2.5} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '72px', position: 'relative', zIndex: 1 }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(29,78,216,0.3)', border: '1px solid rgba(29,78,216,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <BookOpen size={20} color="#93c5fd" strokeWidth={2} />
           </div>
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>{APP_NAME}</h1>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', margin: 0, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Document Intelligence</p>
+            <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '-0.01em' }}>{APP_NAME}</h1>
+            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: 0, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Document Intelligence</p>
           </div>
         </div>
 
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '99px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', marginBottom: '28px' }}>
-            <Sparkles size={13} color="#ffffff" />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>BERT · NLP · AI</span>
+        {/* Main content */}
+        <div style={{ flex: 1, position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          {/* Status pill */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 12px', borderRadius: '6px', background: 'rgba(29,78,216,0.15)', border: '1px solid rgba(29,78,216,0.3)', marginBottom: '32px', width: 'fit-content' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', display: 'inline-block', flexShrink: 0 }} className="animate-pulse" />
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>AI Engine Active</span>
           </div>
 
-          <h2 style={{ fontSize: '42px', fontWeight: 900, color: '#ffffff', lineHeight: 1.12, margin: '0 0 20px 0', letterSpacing: '-0.03em' }}>
-            Transform Books into<br />
-            <span style={{ background: 'linear-gradient(135deg, #93c5fd, #6ee7b7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Actionable Insights</span>
+          {/* Headline */}
+          <h2 style={{ fontSize: '44px', fontWeight: 800, color: '#ffffff', lineHeight: 1.15, margin: '0 0 16px 0', letterSpacing: '-0.03em', maxWidth: '420px' }}>
+            Turn any document into{' '}
+            <span style={{ color: '#93c5fd' }}>clear insights</span>
           </h2>
-          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: '0 0 48px 0', maxWidth: '400px' }}>
-            Harness the power of transformer-based NLP to instantly extract summaries and key insights from any document.
+
+          <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, margin: '0 0 52px 0', maxWidth: '360px', fontWeight: 400 }}>
+            Upload a PDF, paste text, or drop a URL — our BERT-powered engine extracts what matters in seconds.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            {FEATURES.map(({ icon: Icon, color, bg, title, desc }) => (
-              <div key={title} style={{ padding: '18px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', transition: 'all 0.2s', backdropFilter: 'blur(8px)' }}>
-                <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                  <Icon size={17} color="#ffffff" />
+          {/* Feature grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {[
+              { icon: Brain,    label: 'BERT Transformer',  desc: 'State-of-the-art extractive NLP',        accent: '#3b82f6' },
+              { icon: Zap,      label: 'Instant Results',   desc: 'Summaries & bullets in seconds',         accent: '#a78bfa' },
+              { icon: Database, label: 'Saved History',     desc: 'Every summary stored to your account',   accent: '#34d399' },
+              { icon: Cpu,      label: 'Multi-Format',      desc: 'PDF, DOCX, TXT and web URLs',            accent: '#f59e0b' },
+            ].map(({ icon: Icon, label, desc, accent }) => (
+              <div key={label} style={{
+                padding: '18px 16px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                {/* Top accent line */}
+                <div style={{ position: 'absolute', top: 0, left: '16px', right: '16px', height: '2px', borderRadius: '0 0 4px 4px', background: accent, opacity: 0.7 }} />
+                <div style={{
+                  width: '34px', height: '34px', borderRadius: '9px',
+                  background: `${accent}18`,
+                  border: `1px solid ${accent}35`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: '12px',
+                }}>
+                  <Icon size={16} color={accent} strokeWidth={1.8} />
                 </div>
-                <p style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', margin: '0 0 5px 0' }}>{title}</p>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.6 }}>{desc}</p>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px 0', letterSpacing: '-0.01em' }}>{label}</p>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)', margin: 0, lineHeight: 1.5 }}>{desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>National Hackathon Project · Built with React + FastAPI + BERT</p>
+        {/* Stats row */}
+        <div style={{ position: 'relative', zIndex: 1, paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: '32px' }}>
+          {[
+            { value: '10x', label: 'Faster Reading' },
+            { value: 'BERT', label: 'AI Model' },
+            { value: '100%', label: 'Private' },
+          ].map(({ value, label }) => (
+            <div key={label}>
+              <p style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>{value}</p>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: 0, marginTop: '2px', fontWeight: 500 }}>{label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
