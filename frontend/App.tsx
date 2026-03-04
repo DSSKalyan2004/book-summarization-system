@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
 import UsersList from './components/UsersList';
 import HistoryList from './components/HistoryList';
+import VisualSummary from './components/VisualSummary';
 import { Page, BookMetadata, SummaryResult, User } from './types';
 import { APP_NAME, NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/summarizer';
@@ -356,7 +357,41 @@ const App: React.FC = () => {
   };
 
   const downloadSummary = (item: SummaryResult) => {
-    const content = `TITLE: ${item.metadata.title}\n\nSUMMARY:\n${item.summaryParagraphs.join('\n\n')}\n\nKEY INSIGHTS:\n${item.bulletPoints.map(b => `- ${b}`).join('\n')}`;
+    const rows = item.tableRows ?? [];
+    const steps = item.flowSteps ?? [];
+
+    const tableLines = rows.length > 0
+      ? rows.map(r => `| ${r.concept.padEnd(30)} | ${r.explanation}`).join('\n')
+      : item.bulletPoints.map((b, i) => `| Point ${i + 1}`.padEnd(33) + `| ${b}`).join('\n');
+
+    const flowLines = steps.length > 0
+      ? steps.map((s, i) => `  Step ${i + 1}: ${s}${i < steps.length - 1 ? '\n      ↓' : ''}`).join('\n')
+      : item.bulletPoints.slice(0, 7).map((b, i) => `  Step ${i + 1}: ${b}${i < 6 ? '\n      ↓' : ''}`).join('\n');
+
+    const content = [
+      `TITLE: ${item.metadata.title}`,
+      ``,
+      `SUMMARY:`,
+      item.summaryParagraphs.join('\n\n'),
+      ``,
+      `KEY INSIGHTS:`,
+      item.bulletPoints.map(b => `- ${b}`).join('\n'),
+      ``,
+      `${'─'.repeat(42)}`,
+      `TABLE FORMAT SUMMARY`,
+      `${'─'.repeat(42)}`,
+      `| ${'Concept'.padEnd(30)} | Explanation`,
+      `|${'─'.repeat(32)}|${'─'.repeat(50)}`,
+      tableLines,
+      ``,
+      `${'─'.repeat(42)}`,
+      `FLOW DIAGRAM`,
+      `${'─'.repeat(42)}`,
+      flowLines,
+      `      ↓`,
+      `  [ Document Understanding Complete ]`,
+    ].join('\n');
+
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -434,11 +469,15 @@ const App: React.FC = () => {
                       <span className="font-bold text-xs mt-0.5 px-2.5 py-1.5 rounded-lg min-w-[2rem] text-center flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', boxShadow: '0 2px 8px rgba(11,60,93,0.3)' }}>{idx + 1}</span>
                       <p className="text-base leading-[1.8] flex-1" style={{ color: '#374151' }}>{point}</p>
                     </div>
-                  ))}
+))}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* ── Visual Understanding Module ────────────────────────── */}
+          <VisualSummary summary={activeSummary} />
+
         </div>
       );
     }
@@ -450,7 +489,7 @@ const App: React.FC = () => {
             <Sparkles size={13} strokeWidth={2.5} /> BERT-Powered Document Intelligence
           </div>
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight gradient-text">Summarize Any Document</h2>
-          <p className="text-base font-medium max-w-xl mx-auto leading-relaxed" style={{ color: '#6b7280' }}>Upload PDF, DOCX, TXT files or paste URLs and get instant AI-powered summaries with key insights extracted by our BERT model.</p>
+          <p className="text-base font-medium max-w-xl mx-auto leading-relaxed" style={{ color: '#6b7280' }}>Upload PDF, DOCX, TXT files or paste URLs and get instant AI-powered summaries with key insights extracted by BERT model.</p>
         </header>
 
         {error && (
@@ -592,11 +631,11 @@ const App: React.FC = () => {
       </div>
 
       <div className="card-premium rounded-2xl" style={{ padding: '36px 40px' }}>
-        <p className="text-lg font-normal leading-relaxed mb-8" style={{ color: '#57534e' }}>Transform your documents into <span className="font-bold" style={{ color: '#0B3C5D' }}>actionable insights</span> using cutting-edge BERT-based NLP technology, built for researchers, students, and professionals.</p>
+        <p className="text-lg font-normal leading-relaxed mb-8" style={{ color: '#57534e' }}>Transform your documents into <span className="font-bold" style={{ color: '#0B3C5D' }}>actionable insights</span> using BERT AI, built for researchers, students, and professionals.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6" style={{ borderTop: '1px solid #E5E7EB' }}>
           {[
             { icon: <FileText size={20} color="#0B3C5D" />, color: '#0B3C5D', bg: 'rgba(11,60,93,0.07)', title: 'Multi-Format Support', desc: 'Process PDF, DOCX, TXT and web article URLs with intelligent extraction.' },
-            { icon: <Sparkles size={20} color="#1D4ED8" />, color: '#1D4ED8', bg: 'rgba(29,78,216,0.07)', title: 'BERT Transformer Model', desc: 'State-of-the-art extractive summarization using transformer neural networks.' },
+            { icon: <Sparkles size={20} color="#1D4ED8" />, color: '#1D4ED8', bg: 'rgba(29,78,216,0.07)', title: 'BERT AI Model', desc: 'State-of-the-art extractive summarization powered by BERT — fast and accurate.' },
             { icon: <BookOpen size={20} color="#15803D" />, color: '#15803D', bg: 'rgba(21,128,61,0.07)', title: 'Key Insight Extraction', desc: 'Automatically identifies and extracts the most important bullet points.' },
             { icon: <Send size={20} color="#0284c7" />, color: '#0284c7', bg: 'rgba(14,165,233,0.07)', title: 'Cloud Persistence', desc: 'All summaries stored in MongoDB, accessible from any device, any time.' },
           ].map(({ icon, color, bg, title, desc }) => (

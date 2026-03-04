@@ -9,7 +9,7 @@ class SummaryCreate(BaseModel):
     summary_text: str = Field(..., min_length=10)
     summary_type: str
     key_insights: Optional[List[str]] = []
-    ai_model: Optional[str] = "gemini-1.5-flash"
+    ai_model: Optional[str] = "bert"
     language: Optional[str] = "en"
     
     @validator('summary_type')
@@ -27,7 +27,7 @@ class Summary(BaseModel):
     word_count: int = 0
     generated_by: Optional[str] = None
     generation_date: datetime
-    ai_model: str = "gemini-1.5-flash"
+    ai_model: str = "bert"
     language: str = "en"
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None

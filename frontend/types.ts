@@ -3,12 +3,19 @@ export interface BookMetadata {
   title: string;
 }
 
+export interface TableRow {
+  concept: string;
+  explanation: string;
+}
+
 export interface SummaryResult {
   id: string;
   metadata: BookMetadata;
   fullText: string;
   summaryParagraphs: string[];
   bulletPoints: string[];
+  tableRows?: TableRow[];
+  flowSteps?: string[];
   wordCount: number;
   processingTime: number;
   timestamp: number;

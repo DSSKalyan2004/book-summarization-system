@@ -254,7 +254,7 @@ async def create_summary(
             "word_count": word_count,
             "generated_by": current_user.get("userId"),
             "generation_date": datetime.utcnow(),
-            "ai_model": summary_data.ai_model or "gemini-1.5-flash",
+            "ai_model": summary_data.ai_model or "bert",
             "language": summary_data.language or "en",
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
