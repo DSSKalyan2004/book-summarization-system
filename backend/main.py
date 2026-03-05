@@ -41,13 +41,9 @@ async def create_indexes():
 async def create_admin_user():
     global database
 
-    admin_email = os.getenv("ADMIN_EMAIL")
-    admin_password = os.getenv("ADMIN_PASSWORD")
-    admin_name = os.getenv("ADMIN_NAME", "Admin")
-
-    if not admin_email or not admin_password:
-        print("⚠️ ADMIN_EMAIL or ADMIN_PASSWORD missing in .env")
-        return
+    admin_email = os.getenv("ADMIN_EMAIL", "kalyan@gmail.com")
+    admin_password = os.getenv("ADMIN_PASSWORD", "123456")
+    admin_name = os.getenv("ADMIN_NAME", "Kalyan Admin")
 
     existing_admin = await database.users.find_one({"email": admin_email})
     if existing_admin:
