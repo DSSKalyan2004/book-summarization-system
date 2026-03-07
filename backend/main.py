@@ -146,6 +146,8 @@ async def shutdown_event():
 frontend_url = os.getenv("FRONTEND_URL", "")
 allowed_origins = [u.strip() for u in frontend_url.split(",") if u.strip()] if frontend_url else ["*"]
 
+print(f"🌐 CORS allowed origins: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -166,7 +168,8 @@ app.include_router(summaries.router, prefix="/api/summaries", tags=["Summaries"]
 async def health_check():
     return {
         "status": "OK",
-        "database": "connected"
+        "database": "connected",
+        "port": os.getenv("PORT", "not set")
     }
 
 

@@ -1,11 +1,15 @@
 import { SummaryResult, AuthResponse, UsersListResponse, LoginEvent } from '../types';
 
 // Base URL for the backend API.
-// - In development, if VITE_API_URL is not set, we default to `/api`
-//   so that Vite's proxy can forward `/api → http://localhost:8000/api`.
-// - In production, set VITE_API_URL to your deployed backend URL (including `/api` prefix).
+// - In development (.env.development): /api  (Vite proxy → localhost:8000)
+// - In production (.env):              https://book-summarization-system.onrender.com/api
 const API_BASE_URL =
   (import.meta as any).env.VITE_API_URL || '/api';
+
+// Debug: log which API URL is being used (visible in browser console)
+if (typeof window !== 'undefined') {
+  console.log(`[API] Base URL: ${API_BASE_URL}`);
+}
 
 // ── Retry helper ────────────────────────────────────────────────
 const MAX_RETRIES = 3;
@@ -55,10 +59,18 @@ async function fetchWithRetry(
 }
 
 // ── Health check ─────────────────────────────────────────────────
-// Returns true immediately — banner disabled for production deployment.
-// The backend health is checked implicitly by API calls succeeding.
+// Pings the backend /api/health endpoint.
+// Used by App.tsx to show a "server waking up" banner on Render free tier cold starts.
 export const checkServerHealth = async (): Promise<boolean> => {
-  return true;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(`${API_BASE_URL}/health`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return res.ok;
+  } catch {
+    return false;
+  }
 };
 
 // Helper function to get auth headers
