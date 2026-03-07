@@ -7,8 +7,28 @@ interface Props {
 }
 
 const VisualSummary: React.FC<Props> = ({ summary }) => {
-  const tableRows = summary.tableRows ?? [];
-  const flowSteps = summary.flowSteps ?? [];
+  const bullets = summary.bulletPoints ?? [];
+
+  // Use saved tableRows if present; otherwise derive from bullet points
+  const tableRows =
+    summary.tableRows && summary.tableRows.length > 0
+      ? summary.tableRows
+      : bullets.slice(0, 6).map(bp => {
+          const words = bp.split(/\s+/);
+          const end = Math.min(4, Math.ceil(words.length * 0.35));
+          const concept = words
+            .slice(0, end)
+            .join(" ")
+            .replace(/[.,;:!?]$/, "")
+            .trim() || "Key Point";
+          return { concept, explanation: bp };
+        });
+
+  // Use saved flowSteps if present; otherwise use bullet points as steps
+  const flowSteps =
+    summary.flowSteps && summary.flowSteps.length > 0
+      ? summary.flowSteps
+      : bullets.slice(0, 6);
 
   return (
     <div className="space-y-8">

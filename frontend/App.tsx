@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
+import Landing from './components/Landing';
 import UsersList from './components/UsersList';
 import HistoryList from './components/HistoryList';
 import VisualSummary from './components/VisualSummary';
@@ -30,6 +31,7 @@ import {
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<Page>(Page.UPLOAD);
   const [history, setHistory] = useState<SummaryResult[]>([]);
@@ -461,7 +463,7 @@ const App: React.FC = () => {
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
-                  {activeSummary.bulletPoints.map((point, idx) => (
+                  {(activeSummary.bulletPoints ?? []).map((point, idx) => (
                     <div key={idx} className="flex gap-4 p-5 rounded-xl items-start transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 8px rgba(11,60,93,0.04)' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(29,78,216,0.35)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(11,60,93,0.12)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(11,60,93,0.04)'; }}
@@ -726,7 +728,11 @@ const App: React.FC = () => {
     <>
       <ServerBanner />
       {!isAuthenticated ? (
-        <Auth onLogin={handleLogin} />
+        showLanding ? (
+          <Landing onGetStarted={() => setShowLanding(false)} />
+        ) : (
+          <Auth onLogin={handleLogin} onBack={() => setShowLanding(true)} />
+        )
       ) : (
         <div className="flex text-slate-800 min-h-screen" style={{ background: 'var(--bg-base)' }}>
           <Sidebar 
