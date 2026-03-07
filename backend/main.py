@@ -144,7 +144,14 @@ async def shutdown_event():
 
 # ================= CORS =================
 frontend_url = os.getenv("FRONTEND_URL", "")
-allowed_origins = [u.strip() for u in frontend_url.split(",") if u.strip()] if frontend_url else ["*"]
+allowed_origins = [u.strip() for u in frontend_url.split(",") if u.strip()] if frontend_url else []
+
+# Always allow the known Render frontend
+allowed_origins.append("https://book-summarization-system-1.onrender.com")
+
+# Fallback: allow all if no FRONTEND_URL is configured
+if not allowed_origins:
+    allowed_origins = ["*"]
 
 print(f"🌐 CORS allowed origins: {allowed_origins}")
 

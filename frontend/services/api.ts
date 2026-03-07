@@ -1,10 +1,10 @@
 import { SummaryResult, AuthResponse, UsersListResponse, LoginEvent } from '../types';
 
 // Base URL for the backend API.
-// - In development (.env.development): /api  (Vite proxy → localhost:8000)
-// - In production (.env):              https://book-summarization-system.onrender.com/api
+// VITE_API_URL = https://book-summarization-system.onrender.com (production)
+// VITE_API_URL = "" or unset (development — uses Vite proxy)
 const API_BASE_URL =
-  (import.meta as any).env.VITE_API_URL || '/api';
+  ((import.meta as any).env.VITE_API_URL || '') + '/api';
 
 // Debug: log which API URL is being used (visible in browser console)
 if (typeof window !== 'undefined') {
