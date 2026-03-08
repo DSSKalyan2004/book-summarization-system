@@ -109,6 +109,10 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
                 }}
               >{l}</span>
             ))}
+            <a href="https://book-summarization-system-1.onrender.com/" target="_blank" rel="noopener noreferrer"
+              className="nav-link" style={{ fontSize: '13.5px', fontWeight: 600, color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}>
+              <Globe size={14} /> Live Demo
+            </a>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -172,12 +176,12 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '15px 36px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #4F46E5, #6366f1)', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 32px rgba(79,70,229,0.35)' }}>
                 Get Started Free <ArrowRight size={18} strokeWidth={2.2} />
               </button>
-              <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '15px 28px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}>
-                Learn More
-              </button>
+              <a href="https://book-summarization-system-1.onrender.com/" target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '15px 28px', borderRadius: '12px', border: '1px solid rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.08)', color: '#a5b4fc', fontSize: '16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', textDecoration: 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = '#c7d2fe'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)'; e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.color = '#a5b4fc'; }}>
+                <Globe size={17} strokeWidth={2} /> Live Demo
+              </a>
             </div>
 
             {/* Trust row */}
