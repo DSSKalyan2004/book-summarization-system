@@ -58,6 +58,17 @@ async function fetchWithRetry(
   throw lastError;
 }
 
+// ── Safe JSON parser ─────────────────────────────────────────────
+async function safeJson<T = any>(response: Response, fallback: T | null = null): Promise<T> {
+  const text = await response.text();
+  if (!text) return fallback as T;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return fallback as T;
+  }
+}
+
 // ── Health check ─────────────────────────────────────────────────
 // Pings the backend /api/health endpoint.
 // Used by App.tsx to show a "server waking up" banner on Render free tier cold starts.
@@ -90,7 +101,7 @@ export const summaryApi = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch summaries');
-      return await response.json();
+      return await safeJson(response, []);
     } catch (error) {
       console.error('Error fetching summaries:', error);
       throw error;
@@ -104,7 +115,7 @@ export const summaryApi = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch summary');
-      return await response.json();
+      return await safeJson(response);
     } catch (error) {
       console.error('Error fetching summary:', error);
       throw error;
@@ -120,7 +131,7 @@ export const summaryApi = {
         body: JSON.stringify(summary),
       });
       if (!response.ok) throw new Error('Failed to save summary');
-      return await response.json();
+      return await safeJson(response);
     } catch (error) {
       console.error('Error saving summary:', error);
       throw error;
@@ -150,7 +161,7 @@ export const summaryApi = {
         body: JSON.stringify(summary),
       });
       if (!response.ok) throw new Error('Failed to update summary');
-      return await response.json();
+      return await safeJson(response);
     } catch (error) {
       console.error('Error updating summary:', error);
       throw error;
@@ -173,11 +184,11 @@ export const summaryApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await safeJson(response, {});
         throw new Error(errorData.message || 'Failed to upload file');
       }
 
-      return await response.json();
+      return await safeJson(response);
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
@@ -197,11 +208,11 @@ export const authApi = {
       });
       console.log('Registration response status:', response.status);
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await safeJson(response, {});
         console.error('Registration error response:', errorData);
         throw new Error(errorData.detail || errorData.error || errorData.message || 'Registration failed');
       }
-      const data = await response.json();
+      const data = await safeJson(response);
       console.log('Registration successful, data:', data);
       return data;
     } catch (error: any) {
@@ -219,10 +230,10 @@ export const authApi = {
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await safeJson(response, {});
         throw new Error(errorData.detail || errorData.error || errorData.message || 'Login failed');
       }
-      return await response.json();
+      return await safeJson(response);
     } catch (error: any) {
       console.error('Error logging in:', error);
       throw error;
@@ -273,7 +284,7 @@ export const authApi = {
         return { valid: true, user: cachedUser };
       }
 
-      const meData = await meRes.json();
+      const meData = await safeJson(meRes, {});
       const freshUser = meData.user;
       // Update stored user with fresh data from server
       localStorage.setItem('user', JSON.stringify(freshUser));
@@ -285,7 +296,7 @@ export const authApi = {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         }, 1);
         if (refreshRes.ok) {
-          const refreshData = await refreshRes.json();
+          const refreshData = await safeJson(refreshRes, {});
           localStorage.setItem('auth_token', refreshData.token);
           return { valid: true, user: freshUser, newToken: refreshData.token };
         }
@@ -309,10 +320,10 @@ export const authApi = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await safeJson(response, {});
         throw new Error(errorData.error || errorData.message || 'Failed to fetch users');
       }
-      return await response.json();
+      return await safeJson(response);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       throw error;
@@ -327,10 +338,10 @@ export const authApi = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await safeJson(response, {});
         throw new Error(errorData.error || errorData.message || 'Failed to fetch login history');
       }
-      return await response.json();
+      return await safeJson(response);
     } catch (error: any) {
       console.error('Error fetching login history:', error);
       throw error;
