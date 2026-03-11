@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import {
   BookOpen, Zap, Brain, FileText, ArrowRight,
-  Shield, Globe, Clock, Menu, X,
+  Shield, Globe, Clock, Menu, X, Sparkles
 } from 'lucide-react';
 
 const CSS = `
@@ -18,10 +18,15 @@ const CSS = `
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
   }
+  @keyframes hero-book-levitate {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
   .anim-1 { animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
   .anim-2 { animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s both; }
   .anim-3 { animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s both; }
   .anim-4 { animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s both; }
+  .anim-5 { animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s both; }
   .grad-text {
     background: linear-gradient(135deg, #818cf8, #c084fc, #67e8f9);
     background-size: 200% auto;
@@ -47,6 +52,34 @@ const CSS = `
   }
   .nav-link { transition: color 0.2s ease; cursor: pointer; }
   .nav-link:hover { color: #a78bfa !important; }
+  .hero-book {
+    border-radius: 4px 10px 10px 4px;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease;
+  }
+  .hero-book::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px 0 0 4px;
+  }
+  .hero-book::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 8%; bottom: 8%;
+    width: 3px;
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 1.5px, transparent 1.5px, transparent 3.5px);
+    opacity: 0.5;
+  }
+  .hero-book:hover {
+    transform: perspective(600px) rotateY(-8deg) translateY(-8px) scale(1.05);
+    box-shadow: 8px 12px 32px rgba(0,0,0,0.35), 0 0 40px var(--book-glow);
+  }
 `;
 
 const features = [
@@ -147,12 +180,12 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
         )}
 
         {/* ─── HERO ─── */}
-        <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '100px 24px 80px' }}>
+        <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '100px 24px 80px', overflow: 'hidden' }}>
           {/* Subtle background glow */}
           <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '500px', borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(79,70,229,0.15) 0%, transparent 65%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
 
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: '720px' }}>
+          <div style={{ position: 'relative', zIndex: 3, maxWidth: '720px' }}>
             {/* Badge */}
             <div className="anim-1" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', marginBottom: '32px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite', flexShrink: 0 }} />
@@ -184,8 +217,34 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
               </a>
             </div>
 
+            {/* 3 Premium Book Showcase */}
+            <div className="anim-5" style={{ display: 'flex', alignItems: 'end', justifyContent: 'center', gap: '16px', marginTop: '52px' }}>
+              {[
+                { w: 64, h: 88, bg: 'linear-gradient(135deg, #6366f1, #4F46E5)', glow: 'rgba(99,102,241,0.4)', rotate: '-6deg', delay: '0s', icon: <Brain size={18} color="rgba(255,255,255,0.8)" strokeWidth={1.6} />, levDelay: '0s' },
+                { w: 72, h: 100, bg: 'linear-gradient(135deg, #7c3aed, #c084fc)', glow: 'rgba(124,58,237,0.4)', rotate: '0deg', delay: '0.25s', icon: <BookOpen size={20} color="rgba(255,255,255,0.8)" strokeWidth={1.6} />, levDelay: '0.5s' },
+                { w: 64, h: 88, bg: 'linear-gradient(135deg, #0891b2, #67e8f9)', glow: 'rgba(6,182,212,0.4)', rotate: '6deg', delay: '0.5s', icon: <Sparkles size={18} color="rgba(255,255,255,0.8)" strokeWidth={1.6} />, levDelay: '1s' },
+              ].map((book, i) => (
+                <div key={i} className="hero-book"
+                  style={{
+                    width: book.w, height: book.h,
+                    background: book.bg,
+                    boxShadow: `4px 6px 20px rgba(0,0,0,0.35), 0 0 0 rgba(0,0,0,0)`,
+                    transform: `rotate(${book.rotate})`,
+                    animation: `fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) ${book.delay} both, hero-book-levitate 4s ease-in-out ${book.levDelay} infinite`,
+                    ['--book-glow' as any]: book.glow,
+                  }}
+                >
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    {book.icon}
+                    <div style={{ width: '50%', height: '2px', background: 'rgba(255,255,255,0.25)', borderRadius: '1px' }} />
+                    <div style={{ width: '35%', height: '1.5px', background: 'rgba(255,255,255,0.15)', borderRadius: '1px' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Trust row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '48px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '36px', flexWrap: 'wrap' }}>
               {[
                 { val: '10x', label: 'Faster Reading' },
                 { val: 'BERT', label: 'AI Engine' },
@@ -230,7 +289,7 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
               {features.map(({ icon: Icon, title, desc, color }) => (
-                <div key={title} className="landing-card" style={{ padding: '28px 24px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div key={title} className="landing-card" style={{ padding: '28px 24px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
                     <Icon size={22} color={color} strokeWidth={1.8} />
                   </div>
@@ -254,7 +313,7 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
               {steps.map(({ num, title, desc, color }) => (
-                <div key={num} className="landing-card" style={{ padding: '36px 28px', borderRadius: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
+                <div key={num} className="landing-card" style={{ padding: '36px 28px', borderRadius: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: `${color}12`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                     <span style={{ fontSize: '20px', fontWeight: 800, color }}>{num}</span>
                   </div>
@@ -267,7 +326,7 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
         </section>
 
         {/* ─── CTA ─── */}
-        <section style={{ padding: '100px 24px 120px', textAlign: 'center', position: 'relative' }}>
+        <section style={{ padding: '100px 24px 120px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '400px', borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(79,70,229,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1, maxWidth: '520px', margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: '#fff', margin: '0 0 16px', letterSpacing: '-0.035em', lineHeight: 1.1 }}>

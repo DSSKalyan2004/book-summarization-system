@@ -93,7 +93,13 @@ async def connect_to_mongo():
             MONGODB_URI,
             tls=True,
             tlsCAFile=certifi.where(),
-            serverSelectionTimeoutMS=10000
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            socketTimeoutMS=10000,
+            maxPoolSize=10,
+            minPoolSize=2,
+            retryWrites=True,
+            retryReads=True,
         )
 
         database = mongo_client.get_default_database()
@@ -149,6 +155,10 @@ allowed_origins = [u.strip() for u in frontend_url.split(",") if u.strip()] if f
 # Always allow the known Render frontend
 allowed_origins.append("https://book-summarization-system-1.onrender.com")
 
+# Allow localhost for development
+allowed_origins.append("http://localhost:3000")
+allowed_origins.append("http://127.0.0.1:3000")
+
 # Fallback: allow all if no FRONTEND_URL is configured
 if not allowed_origins:
     allowed_origins = ["*"]
@@ -178,6 +188,25 @@ async def health_check():
         "database": "connected",
         "port": os.getenv("PORT", "not set")
     }
+
+
+# ================= KEEP-ALIVE (prevents Render free-tier cold starts) =====
+import asyncio
+
+async def _keep_alive_ping():
+    """Ping MongoDB every 10 minutes to keep the connection pool warm."""
+    while True:
+        await asyncio.sleep(600)  # 10 minutes
+        try:
+            if database is not None:
+                await database.command("ping")
+        except Exception:
+            pass
+
+
+@app.on_event("startup")
+async def start_keep_alive():
+    asyncio.create_task(_keep_alive_ping())
 
 
 # ================= ROOT =================

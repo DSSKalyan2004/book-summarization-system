@@ -11,9 +11,15 @@ if (typeof window !== 'undefined') {
   console.log(`[API] Base URL: ${API_BASE_URL}`);
 }
 
+// ── Eager server warm-up on page load ────────────────────────────
+// Fire a lightweight GET immediately so Render starts waking the server
+if (typeof window !== 'undefined') {
+  fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => {});
+}
+
 // ── Retry helper ────────────────────────────────────────────────
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 800; // base delay; doubles on each attempt
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 500;
 
 async function fetchWithRetry(
   url: string,
@@ -24,7 +30,7 @@ async function fetchWithRetry(
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 s timeout
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeoutId);
 
@@ -59,13 +65,15 @@ async function fetchWithRetry(
 }
 
 // ── Safe JSON parser ─────────────────────────────────────────────
-async function safeJson<T = any>(response: Response, fallback: T | null = null): Promise<T> {
+async function safeJson<T = any>(response: Response): Promise<T | null>;
+async function safeJson<T = any>(response: Response, fallback: T): Promise<T>;
+async function safeJson<T = any>(response: Response, fallback: T | null = null): Promise<T | null> {
   const text = await response.text();
-  if (!text) return fallback as T;
+  if (!text) return fallback;
   try {
     return JSON.parse(text);
   } catch {
-    return fallback as T;
+    return fallback;
   }
 }
 
@@ -75,7 +83,7 @@ async function safeJson<T = any>(response: Response, fallback: T | null = null):
 export const checkServerHealth = async (): Promise<boolean> => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(`${API_BASE_URL}/health`, { signal: controller.signal });
     clearTimeout(timeoutId);
     return res.ok;
@@ -286,7 +294,12 @@ export const authApi = {
 
       const meData = await safeJson(meRes, {});
       const freshUser = meData.user;
-      // Update stored user with fresh data from server
+
+      // Only update stored user if the server returned valid user data
+      if (!freshUser) {
+        console.warn('[API] /auth/me returned no user data — keeping cached session');
+        return { valid: true, user: cachedUser };
+      }
       localStorage.setItem('user', JSON.stringify(freshUser));
 
       // 2. Silently refresh the token to keep extending its life
@@ -297,8 +310,11 @@ export const authApi = {
         }, 1);
         if (refreshRes.ok) {
           const refreshData = await safeJson(refreshRes, {});
-          localStorage.setItem('auth_token', refreshData.token);
-          return { valid: true, user: freshUser, newToken: refreshData.token };
+          const newToken = refreshData.token;
+          if (typeof newToken === 'string' && newToken.length > 0) {
+            localStorage.setItem('auth_token', newToken);
+            return { valid: true, user: freshUser, newToken };
+          }
         }
       } catch { /* refresh failed — existing token is still valid */ }
 

@@ -24,13 +24,14 @@ const SIDEBAR_CSS = `
     border: none;
     cursor: pointer;
     position: relative;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     background: transparent;
     color: rgba(255,255,255,0.5);
   }
   .sidebar-nav-item:hover {
     background: rgba(255,255,255,0.06);
     color: rgba(255,255,255,0.85);
+    transform: translateX(3px);
   }
   .sidebar-nav-item.active {
     background: rgba(99,102,241,0.12);
@@ -40,9 +41,9 @@ const SIDEBAR_CSS = `
   .sidebar-nav-item.active .nav-icon { color: #818cf8; }
   .sidebar-nav-item .nav-icon {
     color: rgba(255,255,255,0.35);
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, transform 0.2s ease;
   }
-  .sidebar-nav-item:hover .nav-icon { color: rgba(255,255,255,0.7); }
+  .sidebar-nav-item:hover .nav-icon { color: rgba(255,255,255,0.7); transform: scale(1.1); }
   .sidebar-logout {
     width: 100%;
     display: flex;
@@ -57,12 +58,13 @@ const SIDEBAR_CSS = `
     border: 1px solid rgba(255,255,255,0.08);
     color: rgba(255,255,255,0.5);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
   }
   .sidebar-logout:hover {
     background: rgba(239,68,68,0.12);
     border-color: rgba(239,68,68,0.3);
     color: #fca5a5;
+    transform: translateY(-1px);
   }
 `;
 
@@ -76,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, currentUse
         style={{
           background: '#0f0f13',
           borderRight: '1px solid rgba(255,255,255,0.06)',
+          overflow: 'hidden',
         }}
       >
         {/* Logo */}
@@ -119,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, currentUse
           })}
         </nav>
 
-        {/* User Card */}
+        {/* User Card & decoration */}
         {currentUser && (
           <div style={{ padding: '16px' }}>
             <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>

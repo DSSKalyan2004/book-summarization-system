@@ -5,7 +5,8 @@ import Auth from './components/Auth';
 import Landing from './components/Landing';
 import UsersList from './components/UsersList';
 import HistoryList from './components/HistoryList';
-import VisualSummary from './components/VisualSummary';
+import { TableSection, FlowchartSection } from './components/VisualSummary';
+import SectionTabs from './components/SectionTabs';
 import { Page, BookMetadata, SummaryResult, User } from './types';
 import { APP_NAME, NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants';
 import { generateBookSummary } from './services/summarizer';
@@ -26,7 +27,10 @@ import {
   Sparkles,
   ArrowRight,
   User as UserIcon,
-  LogOut
+  LogOut,
+  Lightbulb,
+  Table2,
+  GitBranch
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -79,13 +83,13 @@ const App: React.FC = () => {
         }
         return ok;
       });
-      // Reschedule: 5 s when offline, 30 s when online
+      // Reschedule: 3 s when offline, 30 s when online
       clearInterval(interval);
-      interval = setInterval(checkHealth, ok ? 30000 : 5000);
+      interval = setInterval(checkHealth, ok ? 30000 : 3000);
     };
 
     checkHealth();
-    interval = setInterval(checkHealth, 5000); // start fast until first success
+    interval = setInterval(checkHealth, 3000); // start fast until first success
     return () => { isMounted = false; clearInterval(interval); };
   }, []);
 
@@ -409,7 +413,7 @@ const App: React.FC = () => {
         <div className="max-w-5xl mx-auto space-y-8 pb-20">
           <button 
             onClick={() => setActiveSummary(null)}
-            className="flex items-center gap-2 transition-all group text-sm font-semibold px-5 py-3 rounded-xl"
+            className="animate-slide-up flex items-center gap-2 transition-all group text-sm font-semibold px-5 py-3 rounded-xl"
             style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#0B3C5D', boxShadow: '0 2px 8px rgba(11,60,93,0.08)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EFF6FF'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(29,78,216,0.12)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 8px rgba(11,60,93,0.08)'; }}
@@ -418,16 +422,11 @@ const App: React.FC = () => {
             <span>New Summary</span>
           </button>
 
-          <div className="card-premium rounded-2xl" style={{ padding: '40px 48px' }}>
-            <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-8 mb-8" style={{ borderBottom: '1px solid #E5E7EB' }}>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="badge badge-green">AI Summary</span>
-                  <span className="text-xs font-semibold" style={{ color: '#9ca3af' }}>{new Date(activeSummary.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold leading-tight mb-2" style={{ color: '#0B3C5D' }}>{activeSummary.metadata.title}</h2>
-              </div>
-              <div className="flex gap-2">
+          <div className="animate-scale-in delay-100 card-premium rounded-2xl" style={{ padding: '40px 48px' }}>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-8 mb-8" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight" style={{ color: '#0B3C5D' }}>{activeSummary.metadata.title}</h2>
+              <div className="flex gap-2 flex-shrink-0">
                 <button onClick={() => copyToClipboard(fullSummaryText)}
                   className="p-3 rounded-xl transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', color: '#0B3C5D', boxShadow: '0 2px 8px rgba(11,60,93,0.06)' }}
                   title="Copy" aria-label="Copy summary to clipboard"
@@ -438,7 +437,7 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-10">
+            <div className="space-y-10 animate-slide-up delay-300">
               <div className="space-y-5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #0B3C5D, #1D4ED8)' }}></div>
@@ -455,13 +454,20 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-5 pt-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #059669, #0891b2)' }}></div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: '#059669' }}>
-                    <CheckCircle size={16} /> Key Insights
-                  </h3>
-                </div>
+            </div>
+          </div>
+
+          {/* Section buttons */}
+          <div className="animate-slide-up delay-400">
+          <SectionTabs tabs={[
+            {
+              id: 'insights',
+              label: 'Key Insights',
+              icon: <Lightbulb size={18} />,
+              accentColor: '#059669',
+              gradientFrom: '#059669',
+              gradientTo: '#0891b2',
+              content: (
                 <div className="grid grid-cols-1 gap-3">
                   {(activeSummary.bulletPoints ?? []).map((point, idx) => (
                     <div key={idx} className="flex gap-4 p-5 rounded-xl items-start transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 8px rgba(11,60,93,0.04)' }}
@@ -471,27 +477,48 @@ const App: React.FC = () => {
                       <span className="font-bold text-xs mt-0.5 px-2.5 py-1.5 rounded-lg min-w-[2rem] text-center flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', boxShadow: '0 2px 8px rgba(11,60,93,0.3)' }}>{idx + 1}</span>
                       <p className="text-base leading-[1.8] flex-1" style={{ color: '#374151' }}>{point}</p>
                     </div>
-))}
+                  ))}
                 </div>
-              </div>
-            </div>
+              ),
+            },
+            {
+              id: 'table',
+              label: 'Tabular Format',
+              icon: <Table2 size={18} />,
+              accentColor: '#7c3aed',
+              gradientFrom: '#7c3aed',
+              gradientTo: '#a855f7',
+              content: <TableSection summary={activeSummary} />,
+            },
+            {
+              id: 'flowchart',
+              label: 'Flowchart',
+              icon: <GitBranch size={18} />,
+              accentColor: '#0891b2',
+              gradientFrom: '#0891b2',
+              gradientTo: '#0ea5e9',
+              content: <FlowchartSection summary={activeSummary} />,
+            },
+          ]} />
           </div>
-
-          {/* ── Visual Understanding Module ────────────────────────── */}
-          <VisualSummary summary={activeSummary} />
 
         </div>
       );
     }
 
     return (
-      <div className="max-w-4xl mx-auto space-y-10">
-        <header className="text-center space-y-5 py-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'rgba(11,60,93,0.07)', border: '1px solid rgba(11,60,93,0.2)', color: '#0B3C5D' }}>
-            <Sparkles size={13} strokeWidth={2.5} /> BERT-Powered Document Intelligence
+      <div className="max-w-4xl mx-auto space-y-8">
+        <header className="text-center space-y-4 pt-6 pb-4">
+          <div className="animate-slide-up flex justify-center mb-2">
+            <div className="p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', boxShadow: '0 8px 28px rgba(79,70,229,0.3)' }}>
+              <BookOpen size={32} color="#fff" strokeWidth={1.8} className="animate-float" />
+            </div>
           </div>
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight gradient-text">Summarize Any Document</h2>
-          <p className="text-base font-medium max-w-xl mx-auto leading-relaxed" style={{ color: '#6b7280' }}>Upload PDF, DOCX, TXT files or paste URLs and get instant AI-powered summaries with key insights extracted by BERT model.</p>
+          <div className="animate-slide-up delay-100 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.2)', color: '#4F46E5' }}>
+            <Sparkles size={12} strokeWidth={2.5} /> BERT-Powered AI
+          </div>
+          <h2 className="animate-slide-up delay-200 text-3xl md:text-4xl font-extrabold tracking-tight leading-tight gradient-text">Summarize Any Document</h2>
+          <p className="animate-slide-up delay-300 text-sm font-medium max-w-lg mx-auto leading-relaxed" style={{ color: '#9ca3af' }}>Upload PDF, DOCX, TXT files or paste a URL — get instant AI-powered summaries.</p>
         </header>
 
         {error && (
@@ -500,8 +527,8 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="card-premium rounded-2xl" style={{ padding: '32px 36px' }}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="card-premium rounded-2xl" style={{ padding: '28px 32px' }}>
             <div className="space-y-2.5 mb-7">
               <label className="text-xs font-bold uppercase tracking-wider block" style={{ color: '#0B3C5D' }}>Document Title</label>
               <input type="text" required value={metadata.title} onChange={e => setMetadata({...metadata, title: e.target.value})} placeholder="Enter your document title..." className="w-full input-premium rounded-xl font-medium" style={{ padding: '13px 16px', fontSize: '15px', color: '#0B3C5D', background: '#ffffff' }} />
