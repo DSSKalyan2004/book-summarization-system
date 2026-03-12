@@ -1,9 +1,0 @@
-# Render Static Site Configuration
-# https://docs.render.com/blueprint-spec
-
-# Build: npm install && npm run build
-# Publish Directory: dist
-# Redirect Rule: /* → /index.html (Rewrite) for SPA routing
-
-# Environment Variables (set in Render dashboard):
-# VITE_API_URL   - https://book-summarization-system.onrender.com

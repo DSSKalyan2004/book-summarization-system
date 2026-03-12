@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
 import Landing from './components/Landing';
@@ -30,7 +30,9 @@ import {
   LogOut,
   Lightbulb,
   Table2,
-  GitBranch
+  GitBranch,
+  BookMarked,
+  Library
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -88,9 +90,12 @@ const App: React.FC = () => {
       interval = setInterval(checkHealth, ok ? 30000 : 3000);
     };
 
-    checkHealth();
-    interval = setInterval(checkHealth, 3000); // start fast until first success
-    return () => { isMounted = false; clearInterval(interval); };
+    // Delay first check to give backend time to start
+    const startupDelay = setTimeout(() => {
+      checkHealth();
+      interval = setInterval(checkHealth, 3000);
+    }, 2000);
+    return () => { isMounted = false; clearTimeout(startupDelay); clearInterval(interval); };
   }, []);
 
   // Check authentication on mount — validate token with server
@@ -508,17 +513,31 @@ const App: React.FC = () => {
 
     return (
       <div className="max-w-4xl mx-auto space-y-8">
-        <header className="text-center space-y-4 pt-6 pb-4">
-          <div className="animate-slide-up flex justify-center mb-2">
-            <div className="p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', boxShadow: '0 8px 28px rgba(79,70,229,0.3)' }}>
-              <BookOpen size={32} color="#fff" strokeWidth={1.8} className="animate-float" />
+        <header className="text-center space-y-5 pt-6 pb-6 relative">
+          {/* Floating book decorations */}
+          <div className="hidden md:block" style={{ position: 'absolute', top: '-10px', left: '-40px', opacity: 0.12, pointerEvents: 'none' }}>
+            <div className="animate-book-float-1" style={{ width: '48px', height: '64px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #6366f1, #4338ca)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)' }} />
+          </div>
+          <div className="hidden md:block" style={{ position: 'absolute', top: '20px', right: '-30px', opacity: 0.1, pointerEvents: 'none' }}>
+            <div className="animate-book-float-2" style={{ width: '40px', height: '56px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)' }} />
+          </div>
+          <div className="hidden md:block" style={{ position: 'absolute', bottom: '-15px', left: '15%', opacity: 0.08, pointerEvents: 'none' }}>
+            <div className="animate-book-float-3" style={{ width: '36px', height: '48px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #0891b2, #164e63)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)' }} />
+          </div>
+          <div className="hidden md:block" style={{ position: 'absolute', bottom: '10px', right: '10%', opacity: 0.08, pointerEvents: 'none' }}>
+            <div className="animate-book-float-1" style={{ width: '32px', height: '44px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #f59e0b, #b45309)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)', animationDelay: '1s' }} />
+          </div>
+          
+          <div className="animate-slide-up flex justify-center mb-3">
+            <div className="p-5 rounded-2xl animate-glow icon-bounce" style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', boxShadow: '0 12px 40px rgba(79,70,229,0.35)' }}>
+              <BookOpen size={36} color="#fff" strokeWidth={1.6} className="animate-float" />
             </div>
           </div>
-          <div className="animate-slide-up delay-100 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.2)', color: '#4F46E5' }}>
-            <Sparkles size={12} strokeWidth={2.5} /> BERT-Powered AI
+          <div className="animate-slide-up delay-100 inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(79,70,229,0.08), rgba(124,58,237,0.06))', border: '1px solid rgba(79,70,229,0.2)', color: '#4F46E5', boxShadow: '0 2px 8px rgba(79,70,229,0.08)' }}>
+            <Sparkles size={13} strokeWidth={2.5} /> BERT-Powered AI Engine
           </div>
-          <h2 className="animate-slide-up delay-200 text-3xl md:text-4xl font-extrabold tracking-tight leading-tight gradient-text">Summarize Any Document</h2>
-          <p className="animate-slide-up delay-300 text-sm font-medium max-w-lg mx-auto leading-relaxed" style={{ color: '#9ca3af' }}>Upload PDF, DOCX, TXT files or paste a URL — get instant AI-powered summaries.</p>
+          <h2 className="animate-slide-up delay-200 text-3xl md:text-4xl font-extrabold tracking-tight leading-tight gradient-text" style={{ letterSpacing: '-0.03em' }}>Summarize Any Document</h2>
+          <p className="animate-slide-up delay-300 text-sm font-medium max-w-xl mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>Upload PDF, DOCX, TXT files or paste a URL — get instant AI-powered summaries with key insights, tables, and flowcharts.</p>
         </header>
 
         {error && (
@@ -554,11 +573,22 @@ const App: React.FC = () => {
               {inputMode === 'url' && <input type="url" required value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com/article" className="w-full input-premium rounded-xl font-medium" style={{ padding: '13px 16px', fontSize: '15px', color: '#0B3C5D', background: '#ffffff' }} />}
               {inputMode === 'file' && (
                 <div className="space-y-4">
-                  <div className="rounded-2xl p-14 flex flex-col items-center gap-5 transition-all cursor-pointer" style={{ border: '2px dashed rgba(29,78,216,0.3)', background: '#EFF6FF' }}
+                  <div className="rounded-2xl p-14 flex flex-col items-center gap-5 transition-all cursor-pointer relative overflow-hidden group" style={{ border: '2px dashed rgba(29,78,216,0.3)', background: '#EFF6FF' }}
                     onMouseEnter={e => { const d = e.currentTarget as HTMLDivElement; d.style.borderColor = 'rgba(29,78,216,0.55)'; d.style.background = 'rgba(29,78,216,0.06)'; }}
                     onMouseLeave={e => { const d = e.currentTarget as HTMLDivElement; d.style.borderColor = 'rgba(29,78,216,0.3)'; d.style.background = '#EFF6FF'; }}
                   >
-                    <div className="p-5 rounded-2xl" style={{ background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', boxShadow: '0 6px 20px rgba(11,60,93,0.3)' }}>
+                    {/* Decorative floating mini books in upload area */}
+                    <div style={{ position: 'absolute', top: '12px', left: '16px', opacity: 0.08, pointerEvents: 'none' }}>
+                      <div className="animate-book-float-1" style={{ width: '24px', height: '32px', borderRadius: '2px 4px 4px 2px', background: 'linear-gradient(135deg, #6366f1, #4338ca)' }} />
+                    </div>
+                    <div style={{ position: 'absolute', top: '8px', right: '20px', opacity: 0.06, pointerEvents: 'none' }}>
+                      <div className="animate-book-float-2" style={{ width: '20px', height: '28px', borderRadius: '2px 4px 4px 2px', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }} />
+                    </div>
+                    <div style={{ position: 'absolute', bottom: '12px', right: '25%', opacity: 0.06, pointerEvents: 'none' }}>
+                      <div className="animate-book-float-3" style={{ width: '18px', height: '24px', borderRadius: '2px 4px 4px 2px', background: 'linear-gradient(135deg, #0891b2, #164e63)' }} />
+                    </div>
+                    
+                    <div className="p-5 rounded-2xl icon-bounce" style={{ background: 'linear-gradient(135deg, #0B3C5D, #1D4ED8)', boxShadow: '0 6px 20px rgba(11,60,93,0.3)' }}>
                       <FileUp size={36} color="#fff" strokeWidth={1.8} />
                     </div>
                     <div className="text-center">
@@ -578,8 +608,8 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={isLoading || ((inputMode === 'text' || inputMode === 'file') && !textContent.trim())} className="w-full btn-primary disabled:cursor-not-allowed text-white py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base">
-            {isLoading ? <><Loader2 className="animate-spin" size={19} /> <span>{loadingMsg}</span></> : <><Send size={19} /> <span>Generate AI Summary</span> <ArrowRight size={19} /></>}
+          <button type="submit" disabled={isLoading || ((inputMode === 'text' || inputMode === 'file') && !textContent.trim())} className="w-full btn-primary disabled:cursor-not-allowed text-white py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base relative overflow-hidden">
+            {isLoading ? <><Loader2 className="animate-spin" size={19} /> <span>{loadingMsg}</span></> : <><Send size={19} /> <span>Generate AI Summary</span> <ArrowRight size={19} className="transition-transform group-hover:translate-x-1" /></>}
           </button>
         </form>
       </div>
@@ -651,7 +681,15 @@ const App: React.FC = () => {
 
   const renderAbout = () => (
     <div className="max-w-4xl mx-auto space-y-12 py-10">
-      <div className="text-center space-y-4 pb-4">
+      <div className="text-center space-y-4 pb-4 relative">
+        {/* Decorative floating books */}
+        <div className="hidden md:block" style={{ position: 'absolute', top: '-20px', left: '10%', opacity: 0.07, pointerEvents: 'none' }}>
+          <div className="animate-book-float-1" style={{ width: '36px', height: '48px', borderRadius: '3px 6px 6px 3px', background: 'linear-gradient(135deg, #6366f1, #4338ca)' }} />
+        </div>
+        <div className="hidden md:block" style={{ position: 'absolute', top: '10px', right: '8%', opacity: 0.06, pointerEvents: 'none' }}>
+          <div className="animate-book-float-2" style={{ width: '30px', height: '42px', borderRadius: '3px 6px 6px 3px', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }} />
+        </div>
+        
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'rgba(11,60,93,0.07)', border: '1px solid rgba(11,60,93,0.2)', color: '#0B3C5D' }}>
           <Sparkles size={12} /> Platform Overview
         </div>
@@ -659,7 +697,7 @@ const App: React.FC = () => {
         <p className="text-base font-bold uppercase tracking-wider" style={{ color: '#1D4ED8' }}>Intelligent Book Summarization Platform</p>
       </div>
 
-      <div className="card-premium rounded-2xl" style={{ padding: '36px 40px' }}>
+      <div className="card-premium rounded-2xl card-3d" style={{ padding: '36px 40px' }}>
         <p className="text-lg font-normal leading-relaxed mb-8" style={{ color: '#57534e' }}>Transform your documents into <span className="font-bold" style={{ color: '#0B3C5D' }}>actionable insights</span> using BERT AI, built for researchers, students, and professionals.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6" style={{ borderTop: '1px solid #E5E7EB' }}>
           {[
@@ -668,9 +706,9 @@ const App: React.FC = () => {
             { icon: <BookOpen size={20} color="#15803D" />, color: '#15803D', bg: 'rgba(21,128,61,0.07)', title: 'Key Insight Extraction', desc: 'Automatically identifies and extracts the most important bullet points.' },
             { icon: <Send size={20} color="#0284c7" />, color: '#0284c7', bg: 'rgba(14,165,233,0.07)', title: 'Cloud Persistence', desc: 'All summaries stored in MongoDB, accessible from any device, any time.' },
           ].map(({ icon, color, bg, title, desc }) => (
-            <div key={title} className="p-5 rounded-xl transition-all card-hover" style={{ background: bg, border: `1px solid ${color}25` }}>
+            <div key={title} className="p-5 rounded-xl card-magnetic" style={{ background: bg, border: `1px solid ${color}25`, transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 rounded-xl" style={{ background: '#ffffff', boxShadow: `0 2px 8px ${color}22` }}>{icon}</div>
+                <div className="p-2.5 rounded-xl icon-bounce" style={{ background: '#ffffff', boxShadow: `0 2px 8px ${color}22` }}>{icon}</div>
                 <h4 className="font-bold" style={{ color: '#0B3C5D' }}>{title}</h4>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#6b7280' }}>{desc}</p>
@@ -761,7 +799,7 @@ const App: React.FC = () => {
           <Auth onLogin={handleLogin} onBack={() => setShowLanding(true)} />
         )
       ) : (
-        <div className="flex text-slate-800 min-h-screen" style={{ background: 'var(--bg-base)' }}>
+        <div className="flex text-slate-800 min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f0fdf4 100%)' }}>
           <Sidebar 
             currentPage={currentPage} 
             onPageChange={(p) => { setCurrentPage(p); setActiveSummary(null); }}
@@ -769,25 +807,31 @@ const App: React.FC = () => {
             onLogout={handleLogout}
           />
           <main
-            className="flex-1 md:ml-64 p-6 md:p-12 pb-32 md:pb-12 min-h-screen"
+            className="flex-1 md:ml-[270px] p-6 md:p-10 lg:p-12 pb-32 md:pb-12 min-h-screen"
+            style={{ position: 'relative' }}
           >
+            {/* Subtle background decoration */}
+            <div style={{ position: 'fixed', top: '-200px', right: '-200px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+            <div style={{ position: 'fixed', bottom: '-150px', left: '30%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+            
+            <div style={{ position: 'relative', zIndex: 1 }}>
             {/* Mobile user header */}
             {currentUser && (
-              <div className="md:hidden mb-6 rounded-xl p-4 flex items-center justify-between" style={{ background: '#ffffff', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(11,60,93,0.08)' }}>
+              <div className="md:hidden mb-6 rounded-2xl p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #ffffff, #fafafe)', border: '1px solid #e5e7eb', boxShadow: '0 4px 20px rgba(11,60,93,0.06)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white" style={{ background: 'linear-gradient(135deg, #1D4ED8, #0B3C5D)', boxShadow: '0 2px 8px rgba(11,60,93,0.3)' }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm text-white" style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', boxShadow: '0 3px 12px rgba(79,70,229,0.35)' }}>
                     {currentUser.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: '#0B3C5D' }}>{currentUser.name}</p>
-                    <p className="text-xs truncate" style={{ color: '#9ca3af' }}>{currentUser.email}</p>
+                    <p className="text-sm font-bold truncate" style={{ color: '#0f172a' }}>{currentUser.name}</p>
+                    <p className="text-xs truncate" style={{ color: '#94a3b8' }}>{currentUser.email}</p>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
                   aria-label="Log out"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-semibold"
-                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-sm font-semibold"
+                  style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}
                 >
                   <LogOut size={15} />
                 </button>
@@ -797,15 +841,16 @@ const App: React.FC = () => {
             {currentPage === Page.HISTORY && renderHistory()}
             {currentPage === Page.USERS && renderUsers()}
             {currentPage === Page.ABOUT && renderAbout()}
+            </div>
           </main>
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 flex justify-around p-4 z-50" style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderTop: '1.5px solid #E5E7EB', boxShadow: '0 -4px 20px rgba(11,60,93,0.08)' }}>
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 flex justify-around p-3 z-50" style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderTop: '1px solid rgba(99,102,241,0.1)', boxShadow: '0 -8px 32px rgba(11,60,93,0.06)' }}>
             {(currentUser?.role === 'admin' ? ADMIN_NAV_ITEMS : NAV_ITEMS).map(item => (
               <button 
                 key={item.id} 
                 onClick={() => { setCurrentPage(item.id as Page); setActiveSummary(null); }} 
                 aria-label={item.label}
                 className="p-3 rounded-xl transition-all"
-                style={currentPage === item.id ? { color: '#1D4ED8', background: 'rgba(29,78,216,0.1)', border: '1px solid rgba(29,78,216,0.25)' } : { color: '#9CA3AF', border: '1px solid transparent' }}
+                style={currentPage === item.id ? { color: '#4F46E5', background: 'linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.06))', border: '1px solid rgba(79,70,229,0.2)', boxShadow: '0 2px 12px rgba(79,70,229,0.12)' } : { color: '#94a3b8', border: '1px solid transparent' }}
               >
                 {item.icon}
               </button>

@@ -12,9 +12,11 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Eager server warm-up on page load ────────────────────────────
-// Fire a lightweight GET immediately so Render starts waking the server
+// Fire a lightweight GET after a short delay so the backend has time to start
 if (typeof window !== 'undefined') {
-  fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => {});
+  setTimeout(() => {
+    fetch(`${API_BASE_URL}/health`, { method: 'GET' }).catch(() => {});
+  }, 3000);
 }
 
 // ── Retry helper ────────────────────────────────────────────────

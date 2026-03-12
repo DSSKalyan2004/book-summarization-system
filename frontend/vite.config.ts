@@ -16,6 +16,18 @@ export default defineConfig(({ mode }) => {
           target: backendUrl,
           changeOrigin: true,
           secure: false,
+          configure: (proxy, _options) => {
+            // Suppress noisy ECONNREFUSED errors when backend is still starting
+            proxy.on('error', (err, _req, res) => {
+              // Silently handle connection refused — frontend health polling handles retries
+              if (res && typeof (res as any).writeHead === 'function' && !(res as any).headersSent) {
+                (res as any).writeHead(502, { 'Content-Type': 'application/json' });
+                (res as any).end(JSON.stringify({ detail: 'Backend starting up...' }));
+              }
+            });
+            // Remove default error logging from http-proxy
+            proxy.removeAllListeners('proxyReq');
+          },
         },
       },
     },
