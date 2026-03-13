@@ -1,6 +1,7 @@
 import React from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { SummaryResult, TableRow } from "../types";
-import { Table2, GitBranch, ArrowDown } from "lucide-react";
+import { Table2 } from "lucide-react";
 
 interface Props {
   summary: SummaryResult;
@@ -13,186 +14,119 @@ function deriveTableRows(summary: SummaryResult): TableRow[] {
   return (summary.bulletPoints ?? []).slice(0, 6).map(bp => {
     const words = bp.split(/\s+/);
     const end = Math.min(4, Math.ceil(words.length * 0.35));
-    const concept = words.slice(0, end).join(" ").replace(/[.,;:!?]$/, "").trim() || "Key Point";
+    // If no concept can be derived, use an empty string instead of 'Key Point'
+    const concept = words.slice(0, end).join(" ").replace(/[.,;:!?]$/, "").trim() || "";
     return { concept, explanation: bp };
   });
-}
-
-function deriveFlowSteps(summary: SummaryResult): string[] {
-  if (summary.flowSteps && summary.flowSteps.length > 0) return summary.flowSteps;
-  return (summary.bulletPoints ?? []).slice(0, 6);
 }
 
 /* Table Section (exported separately) */
 
 export const TableSection: React.FC<Props> = ({ summary }) => {
+  const prefersReducedMotion = useReducedMotion();
   const tableRows = deriveTableRows(summary);
-
   return (
-    <div className="card-premium rounded-2xl" style={{ padding: "36px 40px" }}>
+    <div>
       <div className="flex items-center gap-2.5 mb-2">
         <div className="w-1 h-5 rounded-full" style={{ background: "linear-gradient(180deg, #7c3aed, #a855f7)" }} />
         <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#7c3aed" }}>
-          <Table2 size={16} /> Table Format Summary
+          <Table2 size={16} /> Professional Table Summary
         </h3>
       </div>
-      <p className="text-sm mb-5 ml-4" style={{ color: "#9ca3af" }}>
-        Concepts &amp; definitions extracted directly from the document.
+      <p className="text-sm ml-4" style={{ color: "#6b7280" }}>
+        Key concepts and simple explanations, auto-extracted from your document.
       </p>
-
+      {/* Removed Animated Overview badge as requested */}
       {tableRows.length > 0 ? (
-        <div style={{ overflowX: "auto", borderRadius: "12px", border: "1.5px solid #e9d5ff" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-            <thead>
-              <tr>
-                {["Concept", "Explanation"].map(h => (
-                  <th key={h} style={{
-                    padding: "12px 18px",
-                    textAlign: "left",
-                    color: "#fff",
-                    fontWeight: 700,
-                    background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-                    fontSize: "11px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    whiteSpace: "nowrap",
-                  }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map((row, i) => (
-                <tr
-                  key={i}
-                  style={{ background: i % 2 === 0 ? "#faf5ff" : "#ffffff", borderBottom: i < tableRows.length - 1 ? "1px solid #ede9fe" : "none" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = "#f3e8ff"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? "#faf5ff" : "#ffffff"; }}
-                >
-                  <td style={{ padding: "13px 18px", fontWeight: 700, color: "#6d28d9", verticalAlign: "top", lineHeight: 1.5, width: "28%", whiteSpace: "nowrap" }}>
-                    {row.concept}
-                  </td>
-                  <td style={{ padding: "13px 18px", color: "#374151", lineHeight: 1.75 }}>
-                    {row.explanation}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p style={{ color: "#9ca3af", fontSize: "14px", textAlign: "center", padding: "24px" }}>
-          No concept-definition pairs detected in this document.
-        </p>
-      )}
-    </div>
-  );
-};
-
-/* Flowchart Section (exported separately) */
-
-export const FlowchartSection: React.FC<Props> = ({ summary }) => {
-  const flowSteps = deriveFlowSteps(summary);
-
-  return (
-    <div className="card-premium rounded-2xl" style={{ padding: "36px 40px" }}>
-      <div className="flex items-center gap-2.5 mb-2">
-        <div className="w-1 h-5 rounded-full" style={{ background: "linear-gradient(180deg, #0891b2, #0ea5e9)" }} />
-        <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#0891b2" }}>
-          <GitBranch size={16} /> Flow Diagram
-        </h3>
-      </div>
-      <p className="text-sm mb-7 ml-4" style={{ color: "#9ca3af" }}>
-        Sequential steps &amp; processes in the order they appear in the document.
-      </p>
-
-      {flowSteps.length > 0 ? (
-        <div className="flex flex-col items-center">
-          {flowSteps.map((step, i) => (
-            <React.Fragment key={i}>
-              <div
-                style={{
-                  background: "linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%)",
-                  border: "2px solid #bae6fd",
-                  borderRadius: "14px",
-                  padding: "16px 28px",
-                  width: "100%",
-                  maxWidth: "640px",
-                  textAlign: "center",
-                  boxShadow: "0 3px 12px rgba(8,145,178,0.10)",
-                  transition: "all 0.2s",
-                  cursor: "default",
-                }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLDivElement;
-                  el.style.borderColor = "#38bdf8";
-                  el.style.boxShadow = "0 6px 20px rgba(8,145,178,0.22)";
-                  el.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLDivElement;
-                  el.style.borderColor = "#bae6fd";
-                  el.style.boxShadow = "0 3px 12px rgba(8,145,178,0.10)";
-                  el.style.transform = "translateY(0)";
-                }}
-              >
-                <div style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  width: "26px", height: "26px", borderRadius: "50%",
-                  background: "linear-gradient(135deg, #0891b2, #0ea5e9)",
-                  color: "#fff", fontWeight: 800, fontSize: "11px",
-                  marginBottom: "8px", boxShadow: "0 2px 8px rgba(8,145,178,0.35)",
-                }}>
-                  {i + 1}
+        <div
+          style={{
+            overflowX: "auto",
+            borderRadius: "22px",
+            border: "1.5px solid rgba(196,181,253,0.35)",
+            background: "rgba(255,255,255,0.97)",
+            boxShadow: "0 18px 36px rgba(124,58,237,0.08)",
+          }}
+        >
+          <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "15px" }}>
+                    <thead>
+                      <tr>
+                        {["#", "Concept", "Explanation"].map((h) => (
+                          <th key={h} style={{
+                            padding: "16px 18px",
+                            textAlign: "left",
+                            color: "#fff",
+                            fontWeight: 800,
+                            background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                            fontSize: "12px",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.07em",
+                            whiteSpace: "nowrap",
+                          }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableRows.map((row, i) => (
+                        <motion.tr
+                          key={i}
+                          initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+                          animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                          transition={{ duration: 0.32, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                          style={{ background: i % 2 === 0 ? "#f6f3ff" : "#ffffff" }}
+                        >
+                          <td style={{ padding: "18px 18px", borderBottom: i < tableRows.length - 1 ? "1px solid #ede9fe" : "none", verticalAlign: "top", width: "64px" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                minWidth: "32px",
+                                height: "32px",
+                                borderRadius: "10px",
+                                background: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+                                color: "#6d28d9",
+                                fontWeight: 800,
+                                fontSize: 15,
+                                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+                              }}
+                            >
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                          </td>
+                          <td style={{ padding: "18px 18px", borderBottom: i < tableRows.length - 1 ? "1px solid #ede9fe" : "none", verticalAlign: "top", width: "32%" }}>
+                            <span style={{ fontWeight: 800, color: "#5b21b6", lineHeight: 1.5, fontSize: 15 }}>
+                              {row.concept}
+                            </span>
+                          </td>
+                          <td style={{ padding: "18px 18px", borderBottom: i < tableRows.length - 1 ? "1px solid #ede9fe" : "none", color: "#374151", lineHeight: 1.7, fontSize: 15 }}>
+                            <div style={{ position: "relative", paddingLeft: "16px" }}>
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  top: "4px",
+                                  bottom: "4px",
+                                  width: "4px",
+                                  borderRadius: "999px",
+                                  background: "linear-gradient(180deg, #a855f7, #ddd6fe)",
+                                }}
+                              />
+                              {row.explanation}
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <p style={{ fontSize: "13px", color: "#1e40af", fontWeight: 600, lineHeight: 1.65, margin: 0 }}>
-                  {step}
+              ) : (
+                <p style={{ color: "#9ca3af", fontSize: "15px", textAlign: "center", padding: "24px" }}>
+                  No concept-definition pairs detected in this document.
                 </p>
-              </div>
-
-              {i < flowSteps.length - 1 && (
-                <div style={{ padding: "6px 0" }}>
-                  <ArrowDown size={22} color="#0891b2" strokeWidth={2.5} />
-                </div>
               )}
-            </React.Fragment>
-          ))}
-
-          {/* Terminal node */}
-          <div style={{ padding: "6px 0" }}>
-            <ArrowDown size={22} color="#059669" strokeWidth={2.5} />
-          </div>
-          <div style={{
-            background: "linear-gradient(135deg, #059669, #10b981)",
-            borderRadius: "14px", padding: "14px 32px", textAlign: "center",
-            boxShadow: "0 4px 16px rgba(5,150,105,0.28)",
-            maxWidth: "640px", width: "100%",
-          }}>
-            <p style={{ fontSize: "13px", fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              Document Understanding Complete
-            </p>
-            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.75)", margin: "4px 0 0 0" }}>
-              {summary.metadata.title}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <p style={{ color: "#9ca3af", fontSize: "14px", textAlign: "center", padding: "24px" }}>
-          No sequential process steps detected in this document.
-        </p>
-      )}
     </div>
   );
-};
-
-/* Combined default export (backward compat) */
-
-const VisualSummary: React.FC<Props> = ({ summary }) => (
-  <div className="space-y-8">
-    <TableSection summary={summary} />
-    <FlowchartSection summary={summary} />
-  </div>
-);
-
-export default VisualSummary;
+}

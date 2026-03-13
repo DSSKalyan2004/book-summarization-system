@@ -8,6 +8,12 @@ export interface TableRow {
   explanation: string;
 }
 
+export interface MindMapNode {
+  id: string;
+  label: string;
+  children: MindMapNode[];
+}
+
 export interface SummaryResult {
   id: string;
   metadata: BookMetadata;
@@ -16,6 +22,7 @@ export interface SummaryResult {
   bulletPoints: string[];
   tableRows?: TableRow[];
   flowSteps?: string[];
+  mindMapNodes?: MindMapNode[];
   wordCount: number;
   processingTime: number;
   timestamp: number;

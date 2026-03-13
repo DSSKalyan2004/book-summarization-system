@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others --names \"frontend,backend\" --prefix-colors \"cyan,green\" \"vite\" \"cd ../backend && set PYTHONIOENCODING=utf-8 && .venv\\\\Scripts\\\\uvicorn.exe main:app --host 0.0.0.0 --port 8000 --reload\"",
+    "dev": "node ./scripts/dev.mjs",
+    "dev:backend": "cd ../backend && .venv\\Scripts\\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview",

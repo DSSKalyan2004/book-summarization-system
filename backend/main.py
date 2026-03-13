@@ -7,17 +7,23 @@ import os
 import certifi
 from dotenv import load_dotenv
 from datetime import datetime
+from pathlib import Path
 
 from routes import auth, books, summaries
 from utils.auth import hash_password
 
-load_dotenv()
+# Load .env from the same directory as this file (works with --app-dir too)
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # ================= DATABASE CONFIG =================
 MONGODB_URI = os.getenv("MONGODB_URI")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "book-summarization")
 
 database = None
 mongo_client = None
+mongo_connecting = False
+mongo_connected = False
+mongo_last_error = None
 
 
 async def create_indexes():
@@ -82,9 +88,13 @@ async def create_admin_user():
 
 # ================= MONGO CONNECT =================
 async def connect_to_mongo():
-    global database, mongo_client
+    global database, mongo_client, mongo_connecting, mongo_connected, mongo_last_error
 
     try:
+        mongo_connecting = True
+        mongo_connected = False
+        mongo_last_error = None
+
         print("=" * 60)
         print("🚀 Connecting to MongoDB...")
         print("=" * 60)
@@ -102,12 +112,20 @@ async def connect_to_mongo():
             retryReads=True,
         )
 
-        database = mongo_client.get_default_database()
+        # Explicitly use the configured database name — get_default_database()
+        # fails on some driver versions when the URI path isn't parsed correctly.
+        try:
+            database = mongo_client.get_default_database()
+        except Exception:
+            database = mongo_client[MONGODB_DB_NAME]
 
         await database.command("ping")
 
         print("✅ MongoDB connected successfully!")
         print(f"📦 Using database: {database.name}")
+
+        mongo_connected = True
+        mongo_last_error = None
 
         await create_indexes()
         await create_admin_user()
@@ -115,19 +133,25 @@ async def connect_to_mongo():
         print("=" * 60)
 
     except Exception as e:
+        database = None
+        mongo_connected = False
+        mongo_last_error = f"{type(e).__name__}: {str(e)}"
         print("=" * 60)
         print("❌ MongoDB connection failed!")
         print(f"Error: {type(e).__name__}: {str(e)}")
-        print("🛑 Server shutting down — MongoDB REQUIRED")
+        print("⚠️ API is running, but database-dependent routes will return 503 until MongoDB connects")
         print("=" * 60)
-
-        raise RuntimeError("MongoDB connection required. Server stopped.")
+    finally:
+        mongo_connecting = False
 
 
 async def close_mongo_connection():
-    global mongo_client
+    global mongo_client, mongo_connected, mongo_connecting
     if mongo_client:
         mongo_client.close()
+        mongo_client = None
+        mongo_connected = False
+        mongo_connecting = False
         print("🔒 MongoDB connection closed")
 
 
@@ -140,7 +164,8 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event():
-    await connect_to_mongo()
+    import asyncio
+    asyncio.create_task(connect_to_mongo())
 
 
 @app.on_event("shutdown")
@@ -183,9 +208,12 @@ app.include_router(summaries.router, prefix="/api/summaries", tags=["Summaries"]
 # ================= HEALTH =================
 @app.get("/api/health")
 async def health_check():
+    database_status = "connected" if mongo_connected else "connecting" if mongo_connecting else "disconnected"
     return {
         "status": "OK",
-        "database": "connected",
+        "database": database_status,
+        "databaseReady": mongo_connected,
+        "databaseError": mongo_last_error,
         "port": os.getenv("PORT", "not set")
     }
 

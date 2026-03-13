@@ -5,7 +5,8 @@ import Auth from './components/Auth';
 import Landing from './components/Landing';
 import UsersList from './components/UsersList';
 import HistoryList from './components/HistoryList';
-import { TableSection, FlowchartSection } from './components/VisualSummary';
+import { TableSection } from './components/VisualSummary';
+import MindMapSection from './components/MindMap';
 import SectionTabs from './components/SectionTabs';
 import { Page, BookMetadata, SummaryResult, User } from './types';
 import { APP_NAME, NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants';
@@ -30,7 +31,7 @@ import {
   LogOut,
   Lightbulb,
   Table2,
-  GitBranch,
+  Brain,
   BookMarked,
   Library
 } from 'lucide-react';
@@ -62,11 +63,11 @@ const App: React.FC = () => {
     return () => clearInterval(t);
   }, [serverOnline]);
 
-  // Poll fast (5 s) when offline, slow (30 s) when online
-  // Banner clears within 5 s of the server starting
+  // Probe immediately on startup, then retry rapidly for the first second.
+  // After connection stabilizes, fall back to slower health checks.
   useEffect(() => {
     let isMounted = true;
-    let interval: ReturnType<typeof setInterval>;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
     const checkHealth = async () => {
       const ok = await checkServerHealth();
@@ -85,17 +86,16 @@ const App: React.FC = () => {
         }
         return ok;
       });
-      // Reschedule: 3 s when offline, 30 s when online
-      clearInterval(interval);
-      interval = setInterval(checkHealth, ok ? 30000 : 3000);
+
+      timeout = setTimeout(checkHealth, ok ? 30000 : 250);
     };
 
-    // Delay first check to give backend time to start
-    const startupDelay = setTimeout(() => {
-      checkHealth();
-      interval = setInterval(checkHealth, 3000);
-    }, 2000);
-    return () => { isMounted = false; clearTimeout(startupDelay); clearInterval(interval); };
+    checkHealth();
+
+    return () => {
+      isMounted = false;
+      if (timeout) clearTimeout(timeout);
+    };
   }, []);
 
   // Check authentication on mount — validate token with server
@@ -369,15 +369,10 @@ const App: React.FC = () => {
 
   const downloadSummary = (item: SummaryResult) => {
     const rows = item.tableRows ?? [];
-    const steps = item.flowSteps ?? [];
 
     const tableLines = rows.length > 0
       ? rows.map(r => `| ${r.concept.padEnd(30)} | ${r.explanation}`).join('\n')
       : item.bulletPoints.map((b, i) => `| Point ${i + 1}`.padEnd(33) + `| ${b}`).join('\n');
-
-    const flowLines = steps.length > 0
-      ? steps.map((s, i) => `  Step ${i + 1}: ${s}${i < steps.length - 1 ? '\n      ↓' : ''}`).join('\n')
-      : item.bulletPoints.slice(0, 7).map((b, i) => `  Step ${i + 1}: ${b}${i < 6 ? '\n      ↓' : ''}`).join('\n');
 
     const content = [
       `TITLE: ${item.metadata.title}`,
@@ -394,13 +389,6 @@ const App: React.FC = () => {
       `| ${'Concept'.padEnd(30)} | Explanation`,
       `|${'─'.repeat(32)}|${'─'.repeat(50)}`,
       tableLines,
-      ``,
-      `${'─'.repeat(42)}`,
-      `FLOW DIAGRAM`,
-      `${'─'.repeat(42)}`,
-      flowLines,
-      `      ↓`,
-      `  [ Document Understanding Complete ]`,
     ].join('\n');
 
     const blob = new Blob([content], { type: 'text/plain' });
@@ -496,13 +484,13 @@ const App: React.FC = () => {
               content: <TableSection summary={activeSummary} />,
             },
             {
-              id: 'flowchart',
-              label: 'Flowchart',
-              icon: <GitBranch size={18} />,
-              accentColor: '#0891b2',
-              gradientFrom: '#0891b2',
-              gradientTo: '#0ea5e9',
-              content: <FlowchartSection summary={activeSummary} />,
+              id: 'mindmap',
+              label: 'Mind Map',
+              icon: <Brain size={18} />,
+              accentColor: '#7C3AED',
+              gradientFrom: '#7C3AED',
+              gradientTo: '#EC4899',
+              content: <MindMapSection summary={activeSummary} />,
             },
           ]} />
           </div>
@@ -512,42 +500,80 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="text-center space-y-5 pt-6 pb-6 relative">
-          {/* Floating book decorations */}
-          <div className="hidden md:block" style={{ position: 'absolute', top: '-10px', left: '-40px', opacity: 0.12, pointerEvents: 'none' }}>
-            <div className="animate-book-float-1" style={{ width: '48px', height: '64px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #6366f1, #4338ca)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)' }} />
-          </div>
-          <div className="hidden md:block" style={{ position: 'absolute', top: '20px', right: '-30px', opacity: 0.1, pointerEvents: 'none' }}>
-            <div className="animate-book-float-2" style={{ width: '40px', height: '56px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)' }} />
-          </div>
-          <div className="hidden md:block" style={{ position: 'absolute', bottom: '-15px', left: '15%', opacity: 0.08, pointerEvents: 'none' }}>
-            <div className="animate-book-float-3" style={{ width: '36px', height: '48px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #0891b2, #164e63)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)' }} />
-          </div>
-          <div className="hidden md:block" style={{ position: 'absolute', bottom: '10px', right: '10%', opacity: 0.08, pointerEvents: 'none' }}>
-            <div className="animate-book-float-1" style={{ width: '32px', height: '44px', borderRadius: '3px 8px 8px 3px', background: 'linear-gradient(135deg, #f59e0b, #b45309)', boxShadow: '3px 4px 12px rgba(0,0,0,0.15)', animationDelay: '1s' }} />
-          </div>
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Dashboard Welcome Banner */}
+        <div className="animate-slide-up rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #0B1D3A 0%, #162850 40%, #1E3A6E 100%)' }}>
+          {/* Background decoration */}
+          <div style={{ position: 'absolute', top: '-80px', right: '-60px', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-60px', left: '20%', width: '250px', height: '250px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: '20%', left: '60%', width: '180px', height: '180px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           
-          <div className="animate-slide-up flex justify-center mb-3">
-            <div className="p-5 rounded-2xl animate-glow icon-bounce" style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', boxShadow: '0 12px 40px rgba(79,70,229,0.35)' }}>
-              <BookOpen size={36} color="#fff" strokeWidth={1.6} className="animate-float" />
+          {/* Dot pattern overlay */}
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '20px 20px', pointerEvents: 'none' }} />
+
+          <div style={{ padding: '36px 40px', position: 'relative', zIndex: 1 }}>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 28px rgba(79,70,229,0.4)', flexShrink: 0 }}>
+                  <BookOpen size={28} color="#fff" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 12px', borderRadius: '99px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)', marginBottom: '8px' }}>
+                    <Sparkles size={11} color="#a5b4fc" />
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.1em', textTransform: 'uppercase' }}>BERT-Powered AI Engine</span>
+                  </div>
+                  <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                    Welcome back{currentUser ? `, ${currentUser.name.split(' ')[0]}` : ''}
+                  </h1>
+                  <p style={{ fontSize: '14px', margin: '6px 0 0', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
+                    Upload documents and get AI-powered summaries with insights, tables & mind maps.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick stats row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '24px' }}>
+              {[
+                { label: 'Documents Analyzed', value: history.length.toString(), icon: <FileText size={16} />, color: '#93c5fd' },
+                { label: 'Total Words Processed', value: history.reduce((s, i) => s + i.wordCount, 0).toLocaleString(), icon: <BookText size={16} />, color: '#6ee7b7' },
+                { label: 'Insights Extracted', value: history.reduce((s, i) => s + i.bulletPoints.length, 0).toString(), icon: <Lightbulb size={16} />, color: '#fde68a' },
+              ].map(({ label, value, icon, color }) => (
+                <div key={label} style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', backdropFilter: 'blur(8px)', transition: 'all 0.3s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>{icon}</span>
+                    <p style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.45)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+                  </div>
+                  <p style={{ fontSize: '22px', fontWeight: 800, color, margin: 0, lineHeight: 1 }}>{value}</p>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="animate-slide-up delay-100 inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(79,70,229,0.08), rgba(124,58,237,0.06))', border: '1px solid rgba(79,70,229,0.2)', color: '#4F46E5', boxShadow: '0 2px 8px rgba(79,70,229,0.08)' }}>
-            <Sparkles size={13} strokeWidth={2.5} /> BERT-Powered AI Engine
-          </div>
-          <h2 className="animate-slide-up delay-200 text-3xl md:text-4xl font-extrabold tracking-tight leading-tight gradient-text" style={{ letterSpacing: '-0.03em' }}>Summarize Any Document</h2>
-          <p className="animate-slide-up delay-300 text-sm font-medium max-w-xl mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>Upload PDF, DOCX, TXT files or paste a URL — get instant AI-powered summaries with key insights, tables, and flowcharts.</p>
-        </header>
-
+        </div>
         {error && (
-          <div className="p-4 rounded-xl flex items-center gap-3 text-sm font-medium" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', color: '#dc2626' }}>
+          <div className="animate-slide-up p-4 rounded-xl flex items-center gap-3 text-sm font-medium" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', color: '#dc2626' }}>
             <AlertCircle size={18} className="flex-shrink-0" /> <span>{error}</span>
           </div>
         )}
 
+        {/* Summarization Form */}
+        <div className="animate-slide-up delay-100">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="card-premium rounded-2xl" style={{ padding: '28px 32px' }}>
+          <div className="card-premium rounded-2xl" style={{ padding: '32px 36px' }}>
+            {/* Form section header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(79,70,229,0.25)' }}>
+                <Send size={18} color="#fff" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0B3C5D', margin: 0 }}>New Document Analysis</h3>
+                <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0', fontWeight: 500 }}>Provide a title and your content below</p>
+              </div>
+            </div>
+
             <div className="space-y-2.5 mb-7">
               <label className="text-xs font-bold uppercase tracking-wider block" style={{ color: '#0B3C5D' }}>Document Title</label>
               <input type="text" required value={metadata.title} onChange={e => setMetadata({...metadata, title: e.target.value})} placeholder="Enter your document title..." className="w-full input-premium rounded-xl font-medium" style={{ padding: '13px 16px', fontSize: '15px', color: '#0B3C5D', background: '#ffffff' }} />
@@ -612,6 +638,38 @@ const App: React.FC = () => {
             {isLoading ? <><Loader2 className="animate-spin" size={19} /> <span>{loadingMsg}</span></> : <><Send size={19} /> <span>Generate AI Summary</span> <ArrowRight size={19} className="transition-transform group-hover:translate-x-1" /></>}
           </button>
         </form>
+        </div>
+
+        {/* Output format preview cards */}
+        <div className="animate-slide-up delay-300">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #4F46E5, #7C3AED)' }} />
+            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: '#64748B', letterSpacing: '0.1em' }}>What You'll Get</h3>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+            {[
+              { icon: <BookText size={20} />, title: 'Summary', desc: 'Concise paragraphs', color: '#0B3C5D', bg: 'rgba(11,60,93,0.05)' },
+              { icon: <Lightbulb size={20} />, title: 'Key Insights', desc: 'Bullet-point highlights', color: '#059669', bg: 'rgba(5,150,105,0.05)' },
+              { icon: <Table2 size={20} />, title: 'Table Format', desc: 'Concept definitions', color: '#7c3aed', bg: 'rgba(124,58,237,0.05)' },
+              { icon: <Brain size={20} />, title: 'Mind Map', desc: 'Topic hierarchy', color: '#EC4899', bg: 'rgba(236,72,153,0.05)' },
+            ].map(({ icon, title, desc, color, bg }) => (
+              <div key={title} className="p-4 rounded-xl transition-all" style={{ background: '#ffffff', border: '1.5px solid #E5E7EB', boxShadow: '0 2px 8px rgba(11,60,93,0.04)' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}40`; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${color}15`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(11,60,93,0.04)'; }}
+              >
+                <div className="flex items-center gap-3">
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0 }}>
+                    {icon}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#0B3C5D', margin: 0 }}>{title}</p>
+                    <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '1px 0 0', fontWeight: 500 }}>{desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   };

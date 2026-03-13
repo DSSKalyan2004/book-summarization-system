@@ -1,5 +1,5 @@
 import { pipeline, env } from "@xenova/transformers";
-import { BookMetadata, SummaryResult, TableRow } from "../types";
+import { BookMetadata, SummaryResult, TableRow, MindMapNode } from "../types";
 
 // CRITICAL: cache model in browser so it doesn't re-download every time
 env.allowLocalModels = false;
@@ -242,12 +242,12 @@ function simplifyToPlainEnglish(raw: string, maxLen = 110): string {
   // Swap complex words for simpler ones
   s = s.replace(/\b(\w+)\b/g, (w) => WORD_MAP[w.toLowerCase()] ?? w);
 
-  // If too many commas, keep first two clauses
+  // If too many commas, keep first three clauses
   const commas = (s.match(/,/g) || []).length;
-  if (commas >= 3) {
+  if (commas >= 4) {
     const parts = s.split(",");
-    const kept = parts.slice(0, 2).join(",").trim();
-    if (kept.length > 25) s = kept;
+    const kept = parts.slice(0, 3).join(",").trim();
+    if (kept.length > 30) s = kept;
   }
 
   // Trim to maxLen at a word boundary
@@ -268,21 +268,43 @@ function simplifyToPlainEnglish(raw: string, maxLen = 110): string {
 
 // -- Extract concept name from a sentence --------------------------------
 function extractConceptName(sentence: string): string {
-  const STRIP_LEAD = /^(The|A|An|This|That|These|Those|Its|Their|Our)\s+/i;
+  const STRIP_LEAD = /^(The|A|An|This|That|These|Those|Its|Their|Our|In|By|For|With)\s+/i;
+
+  // Try to match subject before a linking/action verb
   const m = sentence.match(
-    /^(.{3,50}?)\s+(?:is|are|was|were|can|will|refers? to|means?|involves?|describes?|enables?|allows?|includes?|helps?|plays?|serves?)\b/i
+    /^(.{3,60}?)\s+(?:is|are|was|were|can|will|has|have|had|refers? to|means?|involves?|describes?|enables?|allows?|includes?|helps?|plays?|serves?|provides?|represents?|creates?|supports?|determines?|affects?)\b/i
   );
-  const phrase = m
-    ? m[1].replace(STRIP_LEAD, "").replace(/[.,;!?]$/g, "").trim()
-    : sentence.replace(STRIP_LEAD, "").split(/\s+/).slice(0, 3).join(" ").replace(/[.,;!?]$/g, "");
-  return phrase.split(/\s+/).slice(0, 4).join(" ");
+
+  let phrase: string;
+  if (m) {
+    phrase = m[1].replace(STRIP_LEAD, "").replace(/[.,;!?]$/g, "").trim();
+  } else {
+    // Fallback: extract the most meaningful noun phrase from the beginning
+    const words = sentence.replace(STRIP_LEAD, "").split(/\s+/);
+    // Take words until we hit a common verb or conjunction
+    const stopWords = new Set(["is", "are", "was", "were", "has", "have", "had", "can", "will", "and", "but", "or", "which", "that", "when", "where", "while", "if", "so", "then"]);
+    const taken: string[] = [];
+    for (const w of words) {
+      if (stopWords.has(w.toLowerCase()) && taken.length >= 2) break;
+      taken.push(w);
+      if (taken.length >= 5) break;
+    }
+    phrase = taken.join(" ").replace(/[.,;!?]$/g, "");
+  }
+
+  // Clean up and limit to 5 meaningful words
+  phrase = phrase.replace(/\s+/g, " ").trim();
+  const finalWords = phrase.split(/\s+/).slice(0, 5);
+  return finalWords.join(" ");
 }
 
 // -- TABLE: definitional sentences ---------------------------------------
 const DEFN_PATTERNS: RegExp[] = [
-  /^(.{4,50}?)\s+(?:is|are|was|were)\s+(a |an |the |one )(.{10,})/i,
-  /^(.{4,50}?)\s+(?:refers? to|means?|involves?|describes?|represents?|consists? of|defined? as|known as|called)\s+(.{10,})/i,
-  /^(.{4,50}?)\s+(?:includes?|contains?|comprises?|provides?|enables?|allows?|plays?|serves?)\s+(.{10,})/i,
+  /^(.{4,60}?)\s+(?:is|are|was|were)\s+(a |an |the |one |considered |defined )(.{10,})/i,
+  /^(.{4,60}?)\s+(?:refers? to|means?|involves?|describes?|represents?|consists? of|defined? as|known as|called)\s+(.{10,})/i,
+  /^(.{4,60}?)\s+(?:includes?|contains?|comprises?|provides?|enables?|allows?|plays?|serves?|supports?|creates?|determines?)\s+(.{10,})/i,
+  /^(.{4,60}?)\s+(?:can be|may be|should be|must be|has been|have been)\s+(.{10,})/i,
+  /^(.{4,60}?)\s+(?:helps?|works?|contributes?|leads?|results?|affects?|influences?)\s+(.{10,})/i,
 ];
 
 function parseDefinition(sentence: string): TableRow | null {
@@ -290,8 +312,9 @@ function parseDefinition(sentence: string): TableRow | null {
     const m = sentence.match(pattern);
     if (!m) continue;
     const concept = extractConceptName(sentence);
-    if (!concept || concept.split(/\s+/).length > 5 || concept.length < 3) continue;
-    const simplified = simplifyToPlainEnglish(sentence, 120);
+    if (!concept || concept.split(/\s+/).length > 6 || concept.length < 3) continue;
+    // Use a longer max length to preserve meaning in explanations
+    const simplified = simplifyToPlainEnglish(sentence, 160);
     if (!simplified || simplified.length < 15) continue;
     return { concept: cap(concept), explanation: simplified };
   }
@@ -304,39 +327,71 @@ function definitionalScore(sentence: string): number {
   if (/\b(?:is|are|was|were)\s+(?:a|an|the)\b/.test(l)) bonus += 0.8;
   if (/\b(?:refers? to|means?|defined? as|known as|called|represents?)\b/.test(l)) bonus += 1.0;
   if (/\b(?:involves?|includes?|describes?|consists? of|plays?|serves?)\b/.test(l)) bonus += 0.6;
-  if (/\b(?:important|key|essential|critical|fundamental|significant|crucial)\b/.test(l)) bonus += 0.3;
+  if (/\b(?:important|key|essential|critical|fundamental|significant|crucial|primary|central)\b/.test(l)) bonus += 0.4;
+  if (/\b(?:helps?|enables?|supports?|provides?|creates?|determines?|affects?)\b/.test(l)) bonus += 0.5;
+  // Longer sentences with definitional patterns tend to be more informative
+  if (sentence.length >= 60 && sentence.length <= 250 && bonus > 0) bonus += 0.3;
   return bonus;
 }
 
-// -- FLOW: sequential / process sentences --------------------------------
-const FLOW_WORDS = new Set([
-  "first", "second", "third", "then", "next", "after", "before",
-  "finally", "subsequently", "initially", "eventually", "when", "once",
-  "begin", "start", "lead", "result", "follow", "cause", "enable",
-  "allow", "require", "process", "step", "phase", "stage", "trigger",
-  "produce", "generate", "create", "complete", "finish", "develop",
-  "transform", "continue", "progress", "advance", "achieve", "improve",
-]);
+// -- MIND MAP: cluster bullets into themed branches ----------------------
+function buildMindMap(
+  title: string,
+  bulletPoints: string[],
+  tableRows: TableRow[]
+): MindMapNode[] {
+  // Group concepts from table rows into thematic branches
+  const branches: MindMapNode[] = [];
+  let nodeId = 0;
+  const nextId = () => `mm-${++nodeId}`;
 
-function flowScore(sentence: string): number {
-  const words = sentence.toLowerCase().match(/\b\w+\b/g) || [];
-  let hits = 0;
-  for (const w of words) {
-    if (FLOW_WORDS.has(w)) hits++;
+  // Branch 1: Key Concepts (from table rows)
+  if (tableRows.length > 0) {
+    branches.push({
+      id: nextId(),
+      label: "Key Concepts",
+      children: tableRows.slice(0, 5).map(row => ({
+        id: nextId(),
+        label: row.concept,
+        children: [{
+          id: nextId(),
+          label: row.explanation.length > 80
+            ? row.explanation.substring(0, 77).trimEnd() + "..."
+            : row.explanation,
+          children: [],
+        }],
+      })),
+    });
   }
-  return hits * 0.45;
-}
 
-function toSimpleFlowStep(raw: string): string {
-  let s = simplifyToPlainEnglish(raw, 100);
-  s = s.replace(/^The\s+(?=[A-Z])/, "");
-  const splitPt = s.search(/[;]/);
-  if (splitPt > 20 && splitPt < s.length - 5) s = s.slice(0, splitPt).trim() + ".";
-  if (!s) s = simplifyToPlainEnglish(raw, 80);
-  // Ensure proper ending
-  s = s.trim();
-  if (s && !/[.!?]$/.test(s)) s += ".";
-  return s;
+  // Branch 2: Main Insights (from bullets)
+  if (bulletPoints.length > 0) {
+    const insightBullets = bulletPoints.slice(0, 5);
+    branches.push({
+      id: nextId(),
+      label: "Main Insights",
+      children: insightBullets.map(bp => ({
+        id: nextId(),
+        label: bp.length > 80 ? bp.substring(0, 77).trimEnd() + "..." : bp,
+        children: [],
+      })),
+    });
+  }
+
+  // Branch 3: Additional Details (remaining bullets)
+  if (bulletPoints.length > 5) {
+    branches.push({
+      id: nextId(),
+      label: "Additional Details",
+      children: bulletPoints.slice(5, 10).map(bp => ({
+        id: nextId(),
+        label: bp.length > 80 ? bp.substring(0, 77).trimEnd() + "..." : bp,
+        children: [],
+      })),
+    });
+  }
+
+  return branches;
 }
 
 // -- Main export ---------------------------------------------------------
@@ -385,33 +440,53 @@ export async function generateBookSummary(
     const earlyPool = selected.slice(0, splitPt);
     const latePool = selected.slice(splitPt);
 
-    let para1 = buildParagraph(earlyPool, 100, 200);
+    // Build coherent opening paragraph with title context
+    let para1 = buildParagraph(earlyPool, 100, 220);
     if (para1 && !para1.toLowerCase().includes(metadata.title.toLowerCase().split(" ")[0])) {
-      para1 = `"${metadata.title}" \u2014 ` + para1.charAt(0).toLowerCase() + para1.slice(1);
+      para1 = `"${metadata.title}" explores key ideas: ` + para1.charAt(0).toLowerCase() + para1.slice(1);
     }
     para1 = fixSentence(cleanText(para1));
 
+    // Build second paragraph covering the deeper analysis
     const pool2 = latePool.length >= 4 ? latePool : selected.slice(Math.ceil(selected.length * 0.3));
-    let para2 = buildParagraph(pool2, 120, 250);
+    let para2 = buildParagraph(pool2, 120, 280);
+    if (para2 && para1) {
+      para2 = "The document further discusses " + para2.charAt(0).toLowerCase() + para2.slice(1);
+    }
     para2 = fixSentence(cleanText(para2));
+
+    // Build a third paragraph if enough material is available
+    let para3 = "";
+    const pool3 = selected.slice(Math.ceil(selected.length * 0.65));
+    if (pool3.length >= 3) {
+      para3 = buildParagraph(pool3, 80, 180);
+      if (para3) {
+        para3 = "In summary, " + para3.charAt(0).toLowerCase() + para3.slice(1);
+        para3 = fixSentence(cleanText(para3));
+      }
+    }
 
     if (!para1 && selected.length > 0) para1 = fixSentence(selected.slice(0, 3).join(" "));
     if (!para2 && selected.length > 3) para2 = fixSentence(selected.slice(3, 8).join(" "));
     if (!para1) para1 = `"${metadata.title}" \u2014 the document did not yield enough extractable text for a full paragraph summary.`;
 
-    // -- 2. Key Insights (bullets) ---------------------------------------
+    // -- 2. Key Insights (bullets) — distilled, meaningful points --------
     const bulletRanked = [...baseScored].sort((a, b) => b.score - a.score);
     const bulletPool = dedup(bulletRanked.map(s => s.sentence), usedSentences);
 
     const bulletPoints: string[] = [];
-    const maxBullets = Math.min(10, Math.max(5, Math.floor(bulletPool.length * 0.2)));
+    const maxBullets = Math.min(10, Math.max(5, Math.floor(bulletPool.length * 0.25)));
 
     for (const sent of bulletPool) {
       if (bulletPoints.length >= maxBullets) break;
-      let bullet = sent.trim();
-      if (bullet.length > 200) {
-        const cut = bullet.lastIndexOf(". ", 195);
-        bullet = cut > 60 ? bullet.substring(0, cut + 1) : bullet.substring(0, 195).trimEnd() + ".";
+      // Simplify to plain English for cleaner insights
+      let bullet = simplifyToPlainEnglish(sent.trim(), 180);
+      if (!bullet || bullet.length < 25) {
+        bullet = fixSentence(sent.trim());
+      }
+      if (bullet.length > 220) {
+        const cut = bullet.lastIndexOf(". ", 215);
+        bullet = cut > 60 ? bullet.substring(0, cut + 1) : bullet.substring(0, 215).trimEnd() + ".";
       }
       bullet = fixSentence(bullet);
       if (bullet.split(/\s+/).length >= 5 && bullet.length >= 30) {
@@ -423,7 +498,9 @@ export async function generateBookSummary(
     if (bulletPoints.length < 5) {
       for (const sent of bulletPool) {
         if (bulletPoints.length >= 5) break;
-        const bullet = fixSentence(sent.trim());
+        let bullet = simplifyToPlainEnglish(sent.trim(), 180);
+        if (!bullet || bullet.length < 25) bullet = fixSentence(sent.trim());
+        bullet = fixSentence(bullet);
         if (bullet.split(/\s+/).length >= 5 && bullet.length >= 30 && !bulletPoints.includes(bullet)) {
           bulletPoints.push(bullet);
           usedSentences.add(sent);
@@ -434,6 +511,7 @@ export async function generateBookSummary(
       bulletPoints.push(`"${metadata.title}" \u2014 no standalone key insights could be extracted.`);
 
     // -- 3. Table rows (definitional sentences) --------------------------
+    // First pass: don't exclude usedSentences — table needs the best definitional content
     const defScored = baseScored
       .map(({ sentence, score, idx }) => ({
         sentence,
@@ -443,78 +521,41 @@ export async function generateBookSummary(
       .sort((a, b) => b.score - a.score);
 
     const tableRows: TableRow[] = [];
-    const usedForTable = new Set<string>(usedSentences);
+    const usedConcepts = new Set<string>();
 
     for (const { sentence } of defScored) {
-      if (tableRows.length >= 8) break;
-      if (usedForTable.has(sentence)) continue;
+      if (tableRows.length >= 10) break;
       const row = parseDefinition(sentence);
       if (!row) continue;
-      if (tableRows.some(r => r.concept.toLowerCase() === row.concept.toLowerCase())) continue;
+      const conceptKey = row.concept.toLowerCase();
+      if (usedConcepts.has(conceptKey)) continue;
       tableRows.push(row);
-      usedForTable.add(sentence);
+      usedConcepts.add(conceptKey);
     }
 
-    // Fallback: use top sentences as concept-explanation pairs
+    // Fallback: use top sentences as concept-explanation pairs with better extraction
     if (tableRows.length < 5) {
       const fallbackPool = dedup(
-        [...baseScored].sort((a, b) => b.score - a.score).map(s => s.sentence),
-        usedForTable
+        [...baseScored].sort((a, b) => b.score - a.score).map(s => s.sentence)
       );
       for (const sent of fallbackPool) {
-        if (tableRows.length >= 7) break;
+        if (tableRows.length >= 8) break;
         const concept = extractConceptName(sent);
-        const explanation = simplifyToPlainEnglish(sent, 120);
-        if (concept.length > 3 && explanation.length > 15
-          && !tableRows.some(r => r.concept.toLowerCase() === concept.toLowerCase())) {
+        const explanation = simplifyToPlainEnglish(sent, 160);
+        const conceptKey = concept.toLowerCase();
+        if (concept.length > 3 && explanation.length > 20
+          && !usedConcepts.has(conceptKey)) {
           tableRows.push({ concept: cap(concept), explanation });
-          usedForTable.add(sent);
+          usedConcepts.add(conceptKey);
         }
       }
     }
 
-    // -- 4. Flow steps (sequential / process sentences) ------------------
-    const flowScored = baseScored
-      .map(({ sentence, score, idx }) => ({
-        sentence,
-        score: score + flowScore(sentence),
-        idx,
-      }))
-      .sort((a, b) => b.score - a.score);
-
-    const usedForFlow = new Set<string>(usedForTable);
-    const flowCandidates: { sentence: string; idx: number }[] = [];
-
-    for (const { sentence, idx } of flowScored) {
-      if (flowCandidates.length >= 20) break;
-      if (usedForFlow.has(sentence)) continue;
-      if (flowScore(sentence) === 0 && flowCandidates.length >= 5) continue;
-      flowCandidates.push({ sentence, idx });
-      usedForFlow.add(sentence);
-    }
-
-    // Sort by document position for narrative order
-    flowCandidates.sort((a, b) => a.idx - b.idx);
-    const maxFlow = Math.min(7, Math.max(4, flowCandidates.length));
-    const flowSteps: string[] = [];
-    if (flowCandidates.length <= maxFlow) {
-      flowCandidates.forEach(fc => flowSteps.push(toSimpleFlowStep(fc.sentence)));
-    } else {
-      const gap = flowCandidates.length / maxFlow;
-      for (let i = 0; i < maxFlow; i++) {
-        flowSteps.push(toSimpleFlowStep(flowCandidates[Math.round(i * gap)].sentence));
-      }
-    }
-
-    if (flowSteps.length === 0) {
-      const remaining = dedup(
-        allSentences.filter(s => !usedForFlow.has(s))
-      ).slice(0, 5);
-      remaining.forEach(s => flowSteps.push(toSimpleFlowStep(s)));
-    }
+    // -- 4. Mind map nodes -----------------------------------------------
+    const mindMapNodes = buildMindMap(metadata.title, bulletPoints, tableRows);
 
     const processingTime = (Date.now() - startTime) / 1000;
-    console.log(`\u2705 Done in ${processingTime.toFixed(1)}s \u2014 ${bulletPoints.length} bullets, ${tableRows.length} rows, ${flowSteps.length} steps`);
+    console.log(`\u2705 Done in ${processingTime.toFixed(1)}s \u2014 ${bulletPoints.length} bullets, ${tableRows.length} rows`);
 
     return {
       id: (typeof crypto !== "undefined" && crypto.randomUUID)
@@ -522,10 +563,10 @@ export async function generateBookSummary(
         : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
       metadata,
       fullText: text,
-      summaryParagraphs: [para1, para2].filter(Boolean),
+      summaryParagraphs: [para1, para2, para3].filter(Boolean),
       bulletPoints,
       tableRows,
-      flowSteps,
+      mindMapNodes,
       wordCount,
       processingTime,
       timestamp: Date.now(),
