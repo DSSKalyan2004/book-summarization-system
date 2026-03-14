@@ -87,7 +87,7 @@ const App: React.FC = () => {
         return ok;
       });
 
-      timeout = setTimeout(checkHealth, ok ? 30000 : 250);
+      timeout = setTimeout(checkHealth, ok ? 30000 : 1000); // retry every 1s if not ok
     };
 
     checkHealth();

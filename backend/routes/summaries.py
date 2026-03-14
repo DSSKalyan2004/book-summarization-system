@@ -144,58 +144,76 @@ async def get_my_history(
         items = await cursor.to_list(length=1000)
         for item in items:
             item["id"] = str(item["_id"])
-            item.pop("_id", None)
-            item.pop("userId", None)
-            item.pop("savedAt", None)
-        return items
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+            @router.post("/upload")
+            async def upload_file_for_summary(
+                file: UploadFile = File(...),
+                current_user: Optional[dict] = Depends(get_current_user_optional),
+                db: AsyncIOMotorDatabase = Depends(get_database)
+            ):
+                """Upload file and extract text, saving per-user upload info"""
+                file_path = None
+                try:
+                    # Validate file extension
+                    file_extension = Path(file.filename).suffix.lower()
+                    allowed_extensions = ['.pdf', '.docx', '.txt']
+                    if file_extension not in allowed_extensions:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Only {', '.join(allowed_extensions)} files are allowed"
+                        )
 
-@router.post("/my/save", status_code=201)
-async def save_my_history(
-    summary_data: dict,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    """Save a summary to the current user's permanent history"""
-    user_id = current_user.get("userId") or current_user.get("email")
-    try:
-        doc = {**summary_data, "userId": user_id, "savedAt": datetime.utcnow()}
-        doc.pop("_id", None)
-        result = await db.user_histories.insert_one(doc)
-        summary_data["id"] = str(result.inserted_id)
-        return summary_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save history: {str(e)}")
+                    # Save uploaded file temporarily
+                    unique_filename = f"{int(datetime.utcnow().timestamp() * 1000)}-{file.filename}"
+                    file_path = UPLOAD_DIR / unique_filename
 
-@router.delete("/my/{item_id}", status_code=204)
-async def delete_my_history(
-    item_id: str,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    """Delete a summary from the current user's history"""
-    user_id = current_user.get("userId") or current_user.get("email")
-    try:
-        if ObjectId.is_valid(item_id):
-            await db.user_histories.delete_one({"_id": ObjectId(item_id), "userId": user_id})
-        else:
-            await db.user_histories.delete_one({"id": item_id, "userId": user_id})
-        return None
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete history: {str(e)}")
+                    with open(file_path, "wb") as f:
+                        content = await file.read()
+                        f.write(content)
 
-# ────────────────────────────────────────────────────────────────────────────
+                    print(f"\ud83d\udcc4 Processing uploaded file: {file.filename}")
 
-@router.get("/{summary_id}")
-async def get_summary_by_id(
-    summary_id: str,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    """Get single summary by ID"""
-    try:
-        if not ObjectId.is_valid(summary_id):
+                    # Extract text from file
+                    extracted_text = await extract_text_from_file(str(file_path), file_extension)
+
+                    # Save upload info to user_histories if user is authenticated
+                    upload_record = None
+                    if current_user and (current_user.get("userId") or current_user.get("email")):
+                        user_id = current_user.get("userId") or current_user.get("email")
+                        doc = {
+                            "userId": user_id,
+                            "filename": file.filename,
+                            "file_type": file_extension.replace('.', ''),
+                            "file_size": len(content),
+                            "extracted_text": extracted_text,
+                            "uploadedAt": datetime.utcnow(),
+                            "savedAt": datetime.utcnow(),
+                        }
+                        result = await db.user_histories.insert_one(doc)
+                        upload_record = str(result.inserted_id)
+
+                    # Clean up the uploaded file
+                    try:
+                        os.unlink(file_path)
+                        print(f"\ud83d\udd91\ufe0f Cleaned up temporary file: {unique_filename}")
+                    except Exception as cleanup_error:
+                        print(f"Warning: Failed to delete temporary file: {cleanup_error}")
+
+                    return {
+                        "text": extracted_text,
+                        "filename": file.filename,
+                        "message": "File processed successfully",
+                        "upload_id": upload_record
+                    }
+
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    # Clean up file on error
+                    if file_path and os.path.exists(file_path):
+                        try:
+                            os.unlink(file_path)
+                        except:
+                            pass
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid summary ID"

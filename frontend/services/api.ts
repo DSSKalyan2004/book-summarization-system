@@ -22,7 +22,7 @@ if (typeof window !== 'undefined') {
 
 // ── Retry helper ────────────────────────────────────────────────
 const MAX_RETRIES = 4;
-const RETRY_DELAY_MS = 250;
+const RETRY_DELAY_MS = 1000; // 1 second retry interval for all attempts
 const RETRYABLE_STATUS_CODES = new Set([502, 503, 504]);
 
 async function fetchWithRetry(
@@ -50,7 +50,7 @@ async function fetchWithRetry(
       }
 
       if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < retries) {
-        const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        const delay = RETRY_DELAY_MS;
         console.warn(`[API] Attempt ${attempt}/${retries} received ${response.status} – retrying in ${delay}ms…`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -62,7 +62,7 @@ async function fetchWithRetry(
       const isAborted = err.name === 'AbortError';
       const isNetworkError = err instanceof TypeError;
       if ((!isNetworkError && !isAborted) || attempt === retries) break;
-      const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+      const delay = RETRY_DELAY_MS;
       console.warn(`[API] Attempt ${attempt}/${retries} failed – retrying in ${delay}ms…`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
